@@ -71,8 +71,13 @@ view req { page, toMsg } model =
     { title =
         page.title
     , body =
-        [ div [ class "layout" ]
-            [ div [ class "page" ] page.body
-            ]
-        ]
+        css
+            ++ [ div [ class "layout" ]
+                    [ div [ class "page" ] page.body
+                    ]
+               ]
     }
+
+
+css =
+    [ Html.node "link" [ rel "stylesheet", href "/style.css" ] [] ]
