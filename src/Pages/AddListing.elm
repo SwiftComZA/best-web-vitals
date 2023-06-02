@@ -3,7 +3,7 @@ module Pages.AddListing exposing (Model, Msg(..), page)
 import Bridge
 import Dict
 import Html exposing (..)
-import Html.Attributes exposing (checked, placeholder, type_, value)
+import Html.Attributes exposing (checked, class, id, placeholder, type_, value)
 import Html.Events as Events
 import Lamdera
 import Page
@@ -123,6 +123,7 @@ view shared model =
             , placeholder "Mobile Score"
             , Events.onInput UpdateMobileScore
             , type_ "number"
+            , class "example"
             ]
             []
         , input
@@ -130,8 +131,10 @@ view shared model =
             , placeholder "Desktop Score"
             , Events.onInput UpdateDesktopScore
             , type_ "number"
+            , class "example"
+            , id "exmample"
             ]
             []
-        , button [ Events.onClick Submit ] [ text "Submit" ]
+        , button [ Events.onClick Submit, class "example" ] [ text "Submit" ]
         ]
     }

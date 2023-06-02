@@ -66,7 +66,7 @@ view : Shared.Model -> Model -> View Msg
 view shared model =
     { title = ""
     , body =
-        [ table []
+        [ table [ class "styled-table" ]
             (tr []
                 [ th [] [ text "Domain" ]
                 , th [] [ text "Category" ]
