@@ -5,6 +5,7 @@ module Gen.Route exposing
     )
 
 import Gen.Params.AddListing
+import Gen.Params.AddSite
 import Gen.Params.Admin
 import Gen.Params.Home_
 import Gen.Params.NotFound
@@ -14,6 +15,7 @@ import Url.Parser as Parser exposing ((</>), Parser)
 
 type Route
     = AddListing
+    | AddSite
     | Admin
     | Home_
     | NotFound
@@ -28,6 +30,7 @@ routes : List (Parser (Route -> a) a)
 routes =
     [ Parser.map Home_ Gen.Params.Home_.parser
     , Parser.map AddListing Gen.Params.AddListing.parser
+    , Parser.map AddSite Gen.Params.AddSite.parser
     , Parser.map Admin Gen.Params.Admin.parser
     , Parser.map NotFound Gen.Params.NotFound.parser
     ]
@@ -43,6 +46,9 @@ toHref route =
     case route of
         AddListing ->
             joinAsHref [ "add-listing" ]
+    
+        AddSite ->
+            joinAsHref [ "add-site" ]
     
         Admin ->
             joinAsHref [ "admin" ]

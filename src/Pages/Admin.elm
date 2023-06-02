@@ -1,6 +1,6 @@
 module Pages.Admin exposing (Model, Msg(..), page)
 
-import Bridge
+import Bridge exposing (ToBackend(..))
 import Dict
 import Html exposing (..)
 import Html.Attributes exposing (checked, class, classList, type_)

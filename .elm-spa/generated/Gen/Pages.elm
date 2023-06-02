@@ -4,6 +4,7 @@ import Browser.Navigation exposing (Key)
 import Effect exposing (Effect)
 import ElmSpa.Page
 import Gen.Params.AddListing
+import Gen.Params.AddSite
 import Gen.Params.Admin
 import Gen.Params.Home_
 import Gen.Params.NotFound
@@ -12,6 +13,7 @@ import Gen.Msg as Msg
 import Gen.Route as Route exposing (Route)
 import Page exposing (Page)
 import Pages.AddListing
+import Pages.AddSite
 import Pages.Admin
 import Pages.Home_
 import Pages.NotFound
@@ -36,6 +38,9 @@ init route =
         Route.AddListing ->
             pages.addListing.init ()
     
+        Route.AddSite ->
+            pages.addSite.init ()
+    
         Route.Admin ->
             pages.admin.init ()
     
@@ -51,6 +56,9 @@ update msg_ model_ =
     case ( msg_, model_ ) of
         ( Msg.AddListing msg, Model.AddListing params model ) ->
             pages.addListing.update params msg model
+    
+        ( Msg.AddSite msg, Model.AddSite params model ) ->
+            pages.addSite.update params msg model
     
         ( Msg.Admin msg, Model.Admin params model ) ->
             pages.admin.update params msg model
@@ -71,6 +79,9 @@ view model_ =
         Model.AddListing params model ->
             pages.addListing.view params model
     
+        Model.AddSite params model ->
+            pages.addSite.view params model
+    
         Model.Admin params model ->
             pages.admin.view params model
     
@@ -90,6 +101,9 @@ subscriptions model_ =
         Model.AddListing params model ->
             pages.addListing.subscriptions params model
     
+        Model.AddSite params model ->
+            pages.addSite.subscriptions params model
+    
         Model.Admin params model ->
             pages.admin.subscriptions params model
     
@@ -106,12 +120,14 @@ subscriptions model_ =
 
 pages :
     { addListing : Bundle Gen.Params.AddListing.Params Pages.AddListing.Model Pages.AddListing.Msg
+    , addSite : Bundle Gen.Params.AddSite.Params Pages.AddSite.Model Pages.AddSite.Msg
     , admin : Bundle Gen.Params.Admin.Params Pages.Admin.Model Pages.Admin.Msg
     , home_ : Bundle Gen.Params.Home_.Params Pages.Home_.Model Pages.Home_.Msg
     , notFound : Static Gen.Params.NotFound.Params
     }
 pages =
     { addListing = bundle Pages.AddListing.page Model.AddListing Msg.AddListing
+    , addSite = bundle Pages.AddSite.page Model.AddSite Msg.AddSite
     , admin = bundle Pages.Admin.page Model.Admin Msg.Admin
     , home_ = bundle Pages.Home_.page Model.Home_ Msg.Home_
     , notFound = static Pages.NotFound.view Model.NotFound
