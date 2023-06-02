@@ -8,6 +8,8 @@ module Shared exposing
     , view
     )
 
+import Bridge
+import Dict
 import Html exposing (..)
 import Html.Attributes exposing (class, href, rel)
 import Request exposing (Request)
@@ -23,12 +25,13 @@ type alias Flags =
 
 
 type alias Model =
-    ()
+    { siteList : Bridge.SiteList
+    }
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
-init _ json =
-    ( ()
+init _ _ =
+    ( { siteList = Dict.empty }
     , Cmd.none
     )
 
@@ -38,14 +41,14 @@ init _ json =
 
 
 type Msg
-    = Noop
+    = UpdateSiteList Bridge.SiteList
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update _ msg model =
     case msg of
-        Noop ->
-            ( model
+        UpdateSiteList siteList ->
+            ( { model | siteList = siteList }
             , Cmd.none
             )
 

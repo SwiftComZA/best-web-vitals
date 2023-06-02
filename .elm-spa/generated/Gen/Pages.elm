@@ -3,12 +3,16 @@ module Gen.Pages exposing (Model, Msg, init, subscriptions, update, view)
 import Browser.Navigation exposing (Key)
 import Effect exposing (Effect)
 import ElmSpa.Page
+import Gen.Params.AddListing
+import Gen.Params.Admin
 import Gen.Params.Home_
 import Gen.Params.NotFound
 import Gen.Model as Model
 import Gen.Msg as Msg
 import Gen.Route as Route exposing (Route)
 import Page exposing (Page)
+import Pages.AddListing
+import Pages.Admin
 import Pages.Home_
 import Pages.NotFound
 import Request exposing (Request)
@@ -29,6 +33,12 @@ type alias Msg =
 init : Route -> Shared.Model -> Url -> Key -> ( Model, Effect Msg )
 init route =
     case route of
+        Route.AddListing ->
+            pages.addListing.init ()
+    
+        Route.Admin ->
+            pages.admin.init ()
+    
         Route.Home_ ->
             pages.home_.init ()
     
@@ -39,6 +49,12 @@ init route =
 update : Msg -> Model -> Shared.Model -> Url -> Key -> ( Model, Effect Msg )
 update msg_ model_ =
     case ( msg_, model_ ) of
+        ( Msg.AddListing msg, Model.AddListing params model ) ->
+            pages.addListing.update params msg model
+    
+        ( Msg.Admin msg, Model.Admin params model ) ->
+            pages.admin.update params msg model
+    
         ( Msg.Home_ msg, Model.Home_ params model ) ->
             pages.home_.update params msg model
 
@@ -51,6 +67,12 @@ view model_ =
     case model_ of
         Model.Redirecting_ ->
             \_ _ _ -> View.none
+    
+        Model.AddListing params model ->
+            pages.addListing.view params model
+    
+        Model.Admin params model ->
+            pages.admin.view params model
     
         Model.Home_ params model ->
             pages.home_.view params model
@@ -65,6 +87,12 @@ subscriptions model_ =
         Model.Redirecting_ ->
             \_ _ _ -> Sub.none
     
+        Model.AddListing params model ->
+            pages.addListing.subscriptions params model
+    
+        Model.Admin params model ->
+            pages.admin.subscriptions params model
+    
         Model.Home_ params model ->
             pages.home_.subscriptions params model
     
@@ -77,11 +105,15 @@ subscriptions model_ =
 
 
 pages :
-    { home_ : Bundle Gen.Params.Home_.Params Pages.Home_.Model Pages.Home_.Msg
+    { addListing : Bundle Gen.Params.AddListing.Params Pages.AddListing.Model Pages.AddListing.Msg
+    , admin : Bundle Gen.Params.Admin.Params Pages.Admin.Model Pages.Admin.Msg
+    , home_ : Bundle Gen.Params.Home_.Params Pages.Home_.Model Pages.Home_.Msg
     , notFound : Static Gen.Params.NotFound.Params
     }
 pages =
-    { home_ = bundle Pages.Home_.page Model.Home_ Msg.Home_
+    { addListing = bundle Pages.AddListing.page Model.AddListing Msg.AddListing
+    , admin = bundle Pages.Admin.page Model.Admin Msg.Admin
+    , home_ = bundle Pages.Home_.page Model.Home_ Msg.Home_
     , notFound = static Pages.NotFound.view Model.NotFound
     }
 

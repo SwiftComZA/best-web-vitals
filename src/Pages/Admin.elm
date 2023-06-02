@@ -1,9 +1,9 @@
-module Pages.Home_ exposing (Model, Msg(..), page)
+module Pages.Admin exposing (Model, Msg(..), page)
 
 import Bridge
 import Dict
 import Html exposing (..)
-import Html.Attributes exposing (class, classList)
+import Html.Attributes exposing (checked, class, classList, type_)
 import Html.Events as Events
 import Lamdera
 import Page
@@ -43,14 +43,14 @@ init shared =
 
 
 type Msg
-    = NoOp
+    = ApproveSite String Bool
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Cmd Msg )
 update shared msg model =
     case msg of
-        NoOp ->
-            ( model, Cmd.none )
+        ApproveSite site bool ->
+            ( model, Lamdera.sendToBackend <| Bridge.ApproveSiteToBackend site bool )
 
 
 subscriptions : Model -> Sub Msg
@@ -73,10 +73,10 @@ view shared model =
                 , th [] [ text "Frontend Language" ]
                 , th [] [ text "Mobile Score" ]
                 , th [] [ text "Desktop Score" ]
+                , th [] [ text "Approve" ]
                 ]
                 :: (shared.siteList
                         |> Dict.toList
-                        |> List.filter (\( k, v ) -> v.approved)
                         |> List.map
                             (\( k, v ) ->
                                 tr []
@@ -85,6 +85,14 @@ view shared model =
                                     , td [] [ text v.frontendLang ]
                                     , td [] [ text <| fromInt <| v.mobileScore ]
                                     , td [] [ text <| fromInt <| v.desktopScore ]
+                                    , td []
+                                        [ input
+                                            [ type_ "checkbox"
+                                            , checked v.approved
+                                            , Events.onCheck (ApproveSite k)
+                                            ]
+                                            []
+                                        ]
                                     ]
                             )
                    )

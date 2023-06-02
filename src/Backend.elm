@@ -25,6 +25,15 @@ app =
 init : ( Model, Cmd BackendMsg )
 init =
     ( { message = "stub"
+      , siteList =
+            Dict.singleton "swiftcom.app"
+                { domain = "swiftcom.app"
+                , category = "Software Development"
+                , frontendLang = "Elm"
+                , approved = False
+                , mobileScore = 100
+                , desktopScore = 101
+                }
       }
     , Cmd.none
     )
@@ -42,3 +51,26 @@ updateFromFrontend sessionId clientId msg model =
     case msg of
         NoOpToBackend ->
             ( model, Cmd.none )
+
+        SendSiteToBackend site ->
+            ( { model | siteList = model.siteList |> Dict.insert site.domain site }, Cmd.none )
+
+        FetchSites ->
+            ( model, sendToFrontend clientId <| UpdateSiteList model.siteList )
+
+        ApproveSiteToBackend site bool ->
+            let
+                newModel =
+                    { model
+                        | siteList =
+                            model.siteList
+                                |> Dict.update site
+                                    (\maybeSite ->
+                                        maybeSite
+                                            |> Maybe.andThen (\s -> Just { s | approved = bool })
+                                    )
+                    }
+            in
+            ( newModel
+            , sendToFrontend clientId <| UpdateSiteList newModel.siteList
+            )

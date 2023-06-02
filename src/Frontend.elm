@@ -1,8 +1,10 @@
 module Frontend exposing (..)
 
+import Bridge exposing (ToBackend(..))
 import Browser
 import Browser.Dom
 import Browser.Navigation as Nav exposing (Key)
+import Dict
 import Effect
 import Gen.Model
 import Gen.Pages as Pages
@@ -49,6 +51,7 @@ init url key =
     , Cmd.batch
         [ Cmd.map Shared sharedCmd
         , Effect.toCmd ( Shared, Page ) effect
+        , Lamdera.sendToBackend FetchSites
         ]
     )
 
@@ -130,6 +133,9 @@ updateFromBackend msg model =
     case msg of
         NoOpToFrontend ->
             ( model, Cmd.none )
+
+        UpdateSiteList siteList ->
+            update (Shared <| Shared.UpdateSiteList siteList) model
 
 
 

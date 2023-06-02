@@ -3,6 +3,7 @@ module Types exposing (..)
 import Bridge
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
+import Dict exposing (Dict)
 import Gen.Pages as Pages
 import Shared exposing (Flags)
 import Url exposing (Url)
@@ -26,6 +27,7 @@ type FrontendMsg
 
 type alias BackendModel =
     { message : String
+    , siteList : Bridge.SiteList
     }
 
 
@@ -38,4 +40,5 @@ type BackendMsg
 
 
 type ToFrontend
-    = NoOpToFrontend
+    = UpdateSiteList Bridge.SiteList
+    | NoOpToFrontend
