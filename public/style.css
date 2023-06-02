@@ -9,6 +9,12 @@
     margin-top: 20px;
 }
 
+.main-text {
+    font-size: 0.9em;
+    font-family: sans-serif;
+    text-align: center;
+}
+
 .styled-table th tr {
     background-color: #009879;
     color: #ffffff;
