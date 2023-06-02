@@ -77,6 +77,6 @@ updateFromFrontend sessionId clientId msg model =
             )
 
         QueueSiteForRetrieval site ->
-            ( { model | sitesQueuedForRetrieval = model.sitesQueuedForRetrieval |> List.append [ site ] }
+            ( { model | sitesQueuedForRetrieval = site :: model.sitesQueuedForRetrieval }
             , Cmd.none
             )
