@@ -1,12 +1,15 @@
 module Pages.AddSite exposing (Model, Msg, page)
 
+import Lamdera
 import Effect exposing (Effect)
+import Element
+import Element.Input as Input
 import Gen.Params.AddSite exposing (Params)
 import Page
 import Request
 import Shared
 import View exposing (View)
-import Page
+import Bridge exposing (ToBackend)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
@@ -24,12 +27,15 @@ page shared req =
 
 
 type alias Model =
-    {}
+    { site : String
+    }
 
 
 init : ( Model, Effect Msg )
 init =
-    ( {}, Effect.none )
+    ( { site = "" }
+    , Effect.none
+    )
 
 
 
@@ -37,13 +43,17 @@ init =
 
 
 type Msg
-    = ReplaceMe
+    = UpdateSite String
+    | FetchSite
 
 
 update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
     case msg of
-        ReplaceMe ->
+        UpdateSite site ->
+            ( { model | site = site }, Effect.fromCmd <| Lamdera.sendToBackend <| Bridge.QueueSiteForRetrieval site)
+
+        FetchSite ->
             ( model, Effect.none )
 
 
@@ -62,4 +72,22 @@ subscriptions model =
 
 view : Model -> View Msg
 view model =
-    View.placeholder "AddSite"
+    { title = "Add Site"
+    , body =
+        [ Element.column []
+            [ Input.text
+                []
+                { onChange = UpdateSite
+                , placeholder = Just <| Input.placeholder [] <| Element.text "Site"
+                , text = model.site
+                , label = Input.labelHidden ""
+                }
+            , Input.button
+                []
+                { label = Element.text "Add Site"
+                , onPress = Just FetchSite
+                }
+            ]
+            |> Element.layout []
+        ]
+    }

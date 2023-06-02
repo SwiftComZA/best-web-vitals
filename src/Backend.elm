@@ -34,6 +34,7 @@ init =
                 , mobileScore = 100
                 , desktopScore = 101
                 }
+      , sitesQueuedForRetrieval = []
       }
     , Cmd.none
     )
@@ -73,4 +74,9 @@ updateFromFrontend sessionId clientId msg model =
             in
             ( newModel
             , sendToFrontend clientId <| UpdateSiteList newModel.siteList
+            )
+
+        QueueSiteForRetrieval site ->
+            ( { model | sitesQueuedForRetrieval = model.sitesQueuedForRetrieval |> List.append [ site ] }
+            , Cmd.none
             )

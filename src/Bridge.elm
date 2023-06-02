@@ -12,6 +12,7 @@ type ToBackend
     = FetchSites
     | SendSiteToBackend Site
     | ApproveSiteToBackend String Bool
+    | QueueSiteForRetrieval String
     | NoOpToBackend
 
 

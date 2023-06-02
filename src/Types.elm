@@ -28,6 +28,7 @@ type FrontendMsg
 type alias BackendModel =
     { message : String
     , siteList : Bridge.SiteList
+    , sitesQueuedForRetrieval : List String
     }
 
 
