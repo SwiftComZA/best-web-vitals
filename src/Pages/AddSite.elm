@@ -9,15 +9,16 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Gen.Params.AddSite exposing (Params)
+import Html
+import Html.Events
+import Json.Decode as Decode
 import Lamdera
 import Page
 import Request
 import Shared
 import Styles exposing (color)
 import View exposing (View)
-import Html 
-import Html.Events
-import Json.Decode as Decode
+
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
@@ -62,11 +63,25 @@ update msg model =
     case msg of
         UpdateSite site ->
             ( { model | site = site }
-            , Effect.none )
+            , Effect.none
+            )
 
         FetchSite ->
-            ( { model | queuedSites = model.site :: model.queuedSites, site = "" } 
-            , Effect.fromCmd <| Lamdera.sendToBackend <| Bridge.QueueSiteForRetrieval model.site )
+            let
+                validSite =
+                    case model.site |> String.split "://" of
+                        [ "http", _ ] ->
+                            model.site
+
+                        [ "https", _ ] ->
+                            model.site
+
+                        _ ->
+                            "https://" ++ model.site
+            in
+            ( { model | queuedSites = validSite :: model.queuedSites, site = "" }
+            , Effect.fromCmd <| Lamdera.sendToBackend <| Bridge.QueueSiteForRetrieval validSite
+            )
 
 
 
@@ -98,27 +113,27 @@ onEnter msg =
             )
         )
 
+
 view : Model -> View Msg
 view model =
     { title = "Add Site"
     , body =
         [ Element.layout [] <|
             Element.column []
-            [
-            Element.row []
-                [ Input.text
-                    [onEnter FetchSite]
-                    { onChange = UpdateSite
-                    , placeholder = Just <| Input.placeholder [] <| Element.text "Site"
-                    , text = model.site
-                    , label = Input.labelHidden ""
-                    }
-                , Input.button
-                    Styles.buttonStyle
-                    { label = Element.text "Add Site"
-                    , onPress = Just FetchSite
-                    }
-                ]
+                [ Element.row []
+                    [ Input.text
+                        [ onEnter FetchSite ]
+                        { onChange = UpdateSite
+                        , placeholder = Just <| Input.placeholder [] <| Element.text "Site"
+                        , text = model.site
+                        , label = Input.labelHidden ""
+                        }
+                    , Input.button
+                        Styles.buttonStyle
+                        { label = Element.text "Add Site"
+                        , onPress = Just FetchSite
+                        }
+                    ]
                 , Element.table []
                     { data = model.queuedSites
                     , columns =

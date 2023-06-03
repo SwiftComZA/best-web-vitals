@@ -2,6 +2,7 @@ module Backend exposing (..)
 
 import Bridge exposing (..)
 import Dict
+import Env
 import Fifo
 import Gen.Msg
 import Http
@@ -10,8 +11,9 @@ import Json.Decode
 import Lamdera exposing (..)
 import Pages.Home_
 import Task
-import Types exposing (..)
 import Time
+import Types exposing (..)
+
 
 type alias Model =
     BackendModel
@@ -22,14 +24,15 @@ app =
         { init = init
         , update = update
         , updateFromFrontend = updateFromFrontend
-        , subscriptions = \m -> Sub.none
+        , subscriptions = subscriptions
         }
 
 
 subscriptions : Model -> Sub BackendMsg
 subscriptions model =
     -- subscribe to a timer
-    Time.every 5000 (\_ -> RequestSiteStats)
+    Time.every 10000 (\_ -> RequestSiteStats)
+
 
 init : ( Model, Cmd BackendMsg )
 init =
@@ -43,7 +46,7 @@ init =
                 , mobileScore = 100
                 , desktopScore = 101
                 }
-      , sitesQueuedForRetrieval = Fifo.empty
+      , sitesQueuedForRetrieval = Dict.empty
       , sitesRetrieved = Dict.empty
       }
     , Cmd.none
@@ -94,22 +97,28 @@ update msg model =
                                 siteReq.desktopResult
                     }
 
-                noErrors = 
-                    case (newSiteReq.mobileResult, newSiteReq.desktopResult) of
-                        (Just (Ok _), Just (Ok _)) ->
+                noErrors =
+                    case ( newSiteReq.mobileResult, newSiteReq.desktopResult ) of
+                        ( Just (Ok _), Just (Ok _) ) ->
                             True
 
                         _ ->
                             False
 
+                tooManyAttempts =
+                    newSiteReq.attempts > 10
+
                 newFifo =
-                    if noErrors then
-                        model.sitesQueuedForRetrieval |> Fifo.remove |> Tuple.second
+                    if noErrors || tooManyAttempts then
+                        model.sitesQueuedForRetrieval |> Dict.remove siteReq.url
 
                     else
-                        model.sitesQueuedForRetrieval
+                        model.sitesQueuedForRetrieval |> Dict.insert siteReq.url newSiteReq -- ensures the counter is updates
 
-                newSitesRetrieved = 
+                _ =
+                    Debug.log "tooManyAttempts" newSiteReq.attempts
+
+                newSitesRetrieved =
                     if noErrors then
                         model.sitesRetrieved |> Dict.insert siteReq.url newSiteReq
 
@@ -121,7 +130,6 @@ update msg model =
                         | sitesQueuedForRetrieval = newFifo
                         , sitesRetrieved = newSitesRetrieved
                     }
-                
             in
             ( newModel
             , Cmd.none
@@ -130,10 +138,10 @@ update msg model =
         RequestSiteStats ->
             let
                 siteReq =
-                    model.sitesQueuedForRetrieval |> Fifo.remove |> Tuple.first
+                    model.sitesQueuedForRetrieval |> Dict.toList |> List.head
             in
             case siteReq of
-                Just siteReq_ ->
+                Just ( _, siteReq_ ) ->
                     ( model
                     , requestSiteStats siteReq_
                     )
@@ -183,18 +191,31 @@ updateFromFrontend sessionId clientId msg model =
                     , attempts = 0
                     }
             in
-            ( { model | sitesQueuedForRetrieval = model.sitesQueuedForRetrieval |> Fifo.insert siteRequest }
+            ( { model | sitesQueuedForRetrieval = model.sitesQueuedForRetrieval |> Dict.insert site siteRequest }
             , Cmd.none
             )
+
+
+proxy : String
+proxy =
+    case Env.mode of
+        Env.Development ->
+            "http://localhost:8001/"
+
+        Env.Production ->
+            ""
 
 
 requestSiteStats : SiteRequest -> Cmd BackendMsg
 requestSiteStats siteReq =
     let
         url =
-            "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url="
+            proxy
+                ++ "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url="
                 ++ siteReq.url
                 ++ "&category=performance&category=accessibility&category=best-practices&category=seo"
+                ++ "&key="
+                ++ Env.pageSpeedApiKey
 
         urlMobile =
             url ++ "&strategy=mobile"
@@ -214,4 +235,7 @@ requestSiteStats siteReq =
                 , expect = Http.expectJson (GotSiteStats siteReq Desktop) Json.Auto.SpeedrunResult.rootDecoder
                 }
     in
-    Cmd.batch [ mobileCmd, desktopCmd ]
+    Cmd.batch 
+        [ mobileCmd
+        , desktopCmd 
+        ]

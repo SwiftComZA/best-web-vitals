@@ -61,7 +61,7 @@ type FrontendMsg
 type alias BackendModel =
     { message : String
     , siteList : Bridge.SiteList
-    , sitesQueuedForRetrieval : Fifo SiteRequest
+    , sitesQueuedForRetrieval : Dict String SiteRequest
     , sitesRetrieved : Dict String SiteRequest
     }
 
