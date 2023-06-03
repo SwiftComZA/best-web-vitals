@@ -15,7 +15,9 @@ import Request
 import Shared
 import Styles exposing (color)
 import View exposing (View)
-
+import Html 
+import Html.Events
+import Json.Decode as Decode
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
@@ -59,10 +61,12 @@ update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
     case msg of
         UpdateSite site ->
-            ( { model | site = site }, Effect.fromCmd <| Lamdera.sendToBackend <| Bridge.QueueSiteForRetrieval site )
+            ( { model | site = site }
+            , Effect.none )
 
         FetchSite ->
-            ( { model | queuedSites = model.site :: model.queuedSites, site = "" } , Effect.none )
+            ( { model | queuedSites = model.site :: model.queuedSites, site = "" } 
+            , Effect.fromCmd <| Lamdera.sendToBackend <| Bridge.QueueSiteForRetrieval model.site )
 
 
 
@@ -78,14 +82,32 @@ subscriptions model =
 -- VIEW
 
 
+onEnter : msg -> Element.Attribute msg
+onEnter msg =
+    Element.htmlAttribute
+        (Html.Events.on "keyup"
+            (Decode.field "key" Decode.string
+                |> Decode.andThen
+                    (\key ->
+                        if key == "Enter" then
+                            Decode.succeed msg
+
+                        else
+                            Decode.fail "Not the enter key"
+                    )
+            )
+        )
+
 view : Model -> View Msg
 view model =
     { title = "Add Site"
     , body =
         [ Element.layout [] <|
+            Element.column []
+            [
             Element.row []
                 [ Input.text
-                    []
+                    [onEnter FetchSite]
                     { onChange = UpdateSite
                     , placeholder = Just <| Input.placeholder [] <| Element.text "Site"
                     , text = model.site
@@ -96,6 +118,7 @@ view model =
                     { label = Element.text "Add Site"
                     , onPress = Just FetchSite
                     }
+                ]
                 , Element.table []
                     { data = model.queuedSites
                     , columns =
