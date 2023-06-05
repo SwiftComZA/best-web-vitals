@@ -1,17 +1,12 @@
 module Backend exposing (..)
 
+import Api.Site exposing (Score(..), SiteScoreType(..))
 import Bridge exposing (..)
 import Dict
 import Env
-import Fifo
-import Gen.Msg
 import Http
 import Json.Auto.SpeedrunResult
-import Json.Decode
 import Lamdera exposing (..)
-import Pages.Home_
-import Task
-import Time
 import Types exposing (..)
 
 
@@ -30,24 +25,13 @@ app =
 
 subscriptions : Model -> Sub BackendMsg
 subscriptions model =
-    -- subscribe to a timer
-    Time.every 10000 (\_ -> RequestSiteStats)
+    Sub.none
 
 
 init : ( Model, Cmd BackendMsg )
 init =
     ( { message = "stub"
-      , siteList =
-            Dict.singleton "swiftcom.app"
-                { domain = "swiftcom.app"
-                , category = "Software Development"
-                , frontendLang = "Elm"
-                , approved = False
-                , mobileScore = 100
-                , desktopScore = 101
-                }
-      , sitesQueuedForRetrieval = Dict.empty
-      , sitesRetrieved = Dict.empty
+      , sites = Dict.empty
       }
     , Cmd.none
     )
@@ -56,98 +40,65 @@ init =
 update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
 update msg model =
     case msg of
-        GotSiteStats siteReq device result ->
+        GotSiteStats siteUrl device result ->
             let
-                newSiteReq =
-                    { siteReq
-                        | attempts = siteReq.attempts + 1
-                        , mobileResult =
-                            if device == Mobile then
-                                Just <|
-                                    case result of
-                                        Ok r ->
-                                            Ok
-                                                { performance = r.lighthouseResult.categories.performance.score
-                                                , accessibility = r.lighthouseResult.categories.accessibility.score
-                                                , bestPractices = r.lighthouseResult.categories.bestPractices.score
-                                                , seo = r.lighthouseResult.categories.seo.score
-                                                }
+                maybeSiteScores =
+                    model.sites |> Dict.get siteUrl
 
-                                        Err err ->
-                                            Err err
+                newSiteScores =
+                    { url = siteUrl
+                    , mobileScore =
+                        if device == Mobile then
+                            case result of
+                                Ok r ->
+                                    Success
+                                        { performance = r.lighthouseResult.categories.performance.score
+                                        , accessibility = r.lighthouseResult.categories.accessibility.score
+                                        , bestPractices = r.lighthouseResult.categories.bestPractices.score
+                                        , seo = r.lighthouseResult.categories.seo.score
+                                        }
 
-                            else
-                                siteReq.mobileResult
-                        , desktopResult =
-                            if device == Desktop then
-                                Just <|
-                                    case result of
-                                        Ok r ->
-                                            Ok
-                                                { performance = r.lighthouseResult.categories.performance.score
-                                                , accessibility = r.lighthouseResult.categories.accessibility.score
-                                                , bestPractices = r.lighthouseResult.categories.bestPractices.score
-                                                , seo = r.lighthouseResult.categories.seo.score
-                                                }
+                                Err _ ->
+                                    Failed
 
-                                        Err err ->
-                                            Err err
+                        else
+                            case maybeSiteScores of
+                                Just siteScores ->
+                                    siteScores.mobileScore
 
-                            else
-                                siteReq.desktopResult
+                                Nothing ->
+                                    Failed
+                    , desktopScore =
+                        if device == Desktop then
+                            case result of
+                                Ok r ->
+                                    Success
+                                        { performance = r.lighthouseResult.categories.performance.score
+                                        , accessibility = r.lighthouseResult.categories.accessibility.score
+                                        , bestPractices = r.lighthouseResult.categories.bestPractices.score
+                                        , seo = r.lighthouseResult.categories.seo.score
+                                        }
+
+                                Err _ ->
+                                    Failed
+
+                        else
+                            case maybeSiteScores of
+                                Just siteScores ->
+                                    siteScores.desktopScore
+
+                                Nothing ->
+                                    Failed
                     }
-
-                noErrors =
-                    case ( newSiteReq.mobileResult, newSiteReq.desktopResult ) of
-                        ( Just (Ok _), Just (Ok _) ) ->
-                            True
-
-                        _ ->
-                            False
-
-                tooManyAttempts =
-                    newSiteReq.attempts > 10
-
-                newFifo =
-                    if noErrors || tooManyAttempts then
-                        model.sitesQueuedForRetrieval |> Dict.remove siteReq.url
-
-                    else
-                        model.sitesQueuedForRetrieval |> Dict.insert siteReq.url newSiteReq -- ensures the counter is updates
-
-                _ =
-                    Debug.log "tooManyAttempts" newSiteReq.attempts
-
-                newSitesRetrieved =
-                    if noErrors then
-                        model.sitesRetrieved |> Dict.insert siteReq.url newSiteReq
-
-                    else
-                        model.sitesRetrieved
 
                 newModel =
                     { model
-                        | sitesQueuedForRetrieval = newFifo
-                        , sitesRetrieved = newSitesRetrieved
+                        | sites = model.sites |> Dict.insert siteUrl newSiteScores
                     }
             in
             ( newModel
             , Cmd.none
             )
-
-        RequestSiteStats ->
-            let
-                siteReq =
-                    model.sitesQueuedForRetrieval |> Dict.toList |> List.head
-            in
-            case siteReq of
-                Just ( _, siteReq_ ) ->
-                    ( model
-                    , requestSiteStats siteReq_
-                    )
-
-                Nothing ->
-                    ( model, Cmd.none )
 
         NoOpBackendMsg ->
             ( model, Cmd.none )
@@ -159,40 +110,20 @@ updateFromFrontend sessionId clientId msg model =
         NoOpToBackend ->
             ( model, Cmd.none )
 
-        SendSiteToBackend site ->
-            ( { model | siteList = model.siteList |> Dict.insert site.domain site }, Cmd.none )
-
         FetchSites ->
-            ( model, sendToFrontend clientId <| UpdateSiteList model.siteList )
+            ( model, sendToFrontend clientId <| UpdateSiteList model.sites )
 
-        ApproveSiteToBackend site bool ->
-            let
-                newModel =
-                    { model
-                        | siteList =
-                            model.siteList
-                                |> Dict.update site
-                                    (\maybeSite ->
-                                        maybeSite
-                                            |> Maybe.andThen (\s -> Just { s | approved = bool })
-                                    )
-                    }
-            in
-            ( newModel
-            , sendToFrontend clientId <| UpdateSiteList newModel.siteList
-            )
-
-        QueueSiteForRetrieval site ->
-            let
-                siteRequest =
-                    { url = site
-                    , mobileResult = Nothing
-                    , desktopResult = Nothing
-                    , attempts = 0
-                    }
-            in
-            ( { model | sitesQueuedForRetrieval = model.sitesQueuedForRetrieval |> Dict.insert site siteRequest }
-            , Cmd.none
+        RequestSiteStats siteUrl ->
+            ( { model
+                | sites =
+                    model.sites
+                        |> Dict.insert siteUrl
+                            { url = siteUrl
+                            , mobileScore = Pending
+                            , desktopScore = Pending
+                            }
+              }
+            , requestSiteStats siteUrl
             )
 
 
@@ -206,13 +137,13 @@ proxy =
             ""
 
 
-requestSiteStats : SiteRequest -> Cmd BackendMsg
-requestSiteStats siteReq =
+requestSiteStats : String -> Cmd BackendMsg
+requestSiteStats siteUrl =
     let
         url =
             proxy
                 ++ "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url="
-                ++ siteReq.url
+                ++ siteUrl
                 ++ "&category=performance&category=accessibility&category=best-practices&category=seo"
                 ++ "&key="
                 ++ Env.pageSpeedApiKey
@@ -226,16 +157,16 @@ requestSiteStats siteReq =
         mobileCmd =
             Http.get
                 { url = urlMobile
-                , expect = Http.expectJson (GotSiteStats siteReq Mobile) Json.Auto.SpeedrunResult.rootDecoder
+                , expect = Http.expectJson (GotSiteStats siteUrl Mobile) Json.Auto.SpeedrunResult.rootDecoder
                 }
 
         desktopCmd =
             Http.get
                 { url = urlDesktop
-                , expect = Http.expectJson (GotSiteStats siteReq Desktop) Json.Auto.SpeedrunResult.rootDecoder
+                , expect = Http.expectJson (GotSiteStats siteUrl Desktop) Json.Auto.SpeedrunResult.rootDecoder
                 }
     in
-    Cmd.batch 
+    Cmd.batch
         [ mobileCmd
-        , desktopCmd 
+        , desktopCmd
         ]

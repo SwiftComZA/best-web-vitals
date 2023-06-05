@@ -1,15 +1,13 @@
 module Pages.Admin exposing (Model, Msg(..), page)
 
 import Bridge exposing (ToBackend(..))
-import Dict
+import Dict exposing (Dict)
+import Element exposing (fill, layout, paddingXY, width)
 import Html exposing (..)
-import Html.Attributes exposing (checked, class, classList, type_)
-import Html.Events as Events
-import Lamdera
 import Page
 import Request exposing (Request)
 import Shared
-import String exposing (fromInt)
+import UI.Table exposing (siteScoresTable)
 import View exposing (View)
 
 
@@ -43,14 +41,14 @@ init shared =
 
 
 type Msg
-    = ApproveSite String Bool
+    = NoOp
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Cmd Msg )
 update shared msg model =
     case msg of
-        ApproveSite site bool ->
-            ( model, Lamdera.sendToBackend <| Bridge.ApproveSiteToBackend site bool )
+        NoOp ->
+            ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -64,38 +62,11 @@ subscriptions _ =
 
 view : Shared.Model -> Model -> View Msg
 view shared model =
+    let
+        siteList =
+            shared.siteList |> Dict.values
+    in
     { title = ""
     , body =
-        [ table [ class "styled-table" ]
-            (tr []
-                [ th [] [ text "Domain" ]
-                , th [] [ text "Category" ]
-                , th [] [ text "Frontend Language" ]
-                , th [] [ text "Mobile Score" ]
-                , th [] [ text "Desktop Score" ]
-                , th [] [ text "Approve" ]
-                ]
-                :: (shared.siteList
-                        |> Dict.toList
-                        |> List.map
-                            (\( k, v ) ->
-                                tr []
-                                    [ td [] [ text v.domain ]
-                                    , td [] [ text v.category ]
-                                    , td [] [ text v.frontendLang ]
-                                    , td [] [ text <| fromInt <| v.mobileScore ]
-                                    , td [] [ text <| fromInt <| v.desktopScore ]
-                                    , td []
-                                        [ input
-                                            [ type_ "checkbox"
-                                            , checked v.approved
-                                            , Events.onCheck (ApproveSite k)
-                                            ]
-                                            []
-                                        ]
-                                    ]
-                            )
-                   )
-            )
-        ]
+        [ layout [ width fill, paddingXY 50 20 ] <| siteScoresTable siteList ]
     }

@@ -8,8 +8,8 @@ module Shared exposing
     , view
     )
 
-import Bridge
-import Dict
+import Api.Site exposing (Site)
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (class, href, rel)
 import Request exposing (Request)
@@ -25,7 +25,7 @@ type alias Flags =
 
 
 type alias Model =
-    { siteList : Bridge.SiteList
+    { siteList : Dict String Site
     }
 
 
@@ -41,7 +41,7 @@ init _ _ =
 
 
 type Msg
-    = UpdateSiteList Bridge.SiteList
+    = UpdateSiteList (Dict String Site)
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )

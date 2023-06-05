@@ -1,22 +1,17 @@
 module Pages.AddSite exposing (Model, Msg, page)
 
-import Bridge exposing (ToBackend)
-import Dict
+import Bridge
 import Effect exposing (Effect)
-import Element exposing (fill, mouseDown, mouseOver, padding)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Font as Font
+import Element exposing (fill)
 import Element.Input as Input
 import Gen.Params.AddSite exposing (Params)
-import Html
 import Html.Events
 import Json.Decode as Decode
 import Lamdera
 import Page
 import Request
 import Shared
-import Styles exposing (color)
+import Styles
 import View exposing (View)
 
 
@@ -55,7 +50,7 @@ init =
 
 type Msg
     = UpdateSite String
-    | FetchSite
+    | SubmitSite
 
 
 update : Msg -> Model -> ( Model, Effect Msg )
@@ -66,7 +61,7 @@ update msg model =
             , Effect.none
             )
 
-        FetchSite ->
+        SubmitSite ->
             let
                 validSite =
                     case model.site |> String.split "://" of
@@ -80,7 +75,7 @@ update msg model =
                             "https://" ++ model.site
             in
             ( { model | queuedSites = validSite :: model.queuedSites, site = "" }
-            , Effect.fromCmd <| Lamdera.sendToBackend <| Bridge.QueueSiteForRetrieval validSite
+            , Effect.fromCmd <| Lamdera.sendToBackend <| Bridge.RequestSiteStats validSite
             )
 
 
@@ -122,7 +117,7 @@ view model =
             Element.column []
                 [ Element.row []
                     [ Input.text
-                        [ onEnter FetchSite ]
+                        [ onEnter SubmitSite ]
                         { onChange = UpdateSite
                         , placeholder = Just <| Input.placeholder [] <| Element.text "Site"
                         , text = model.site
@@ -131,7 +126,7 @@ view model =
                     , Input.button
                         Styles.buttonStyle
                         { label = Element.text "Add Site"
-                        , onPress = Just FetchSite
+                        , onPress = Just SubmitSite
                         }
                     ]
                 , Element.table []

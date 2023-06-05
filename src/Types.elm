@@ -1,14 +1,14 @@
 module Types exposing (..)
 
+import Api.Site exposing (Site, SiteScoreType)
 import Bridge
-import Browser exposing (UrlRequest)
+import Browser
 import Browser.Navigation exposing (Key)
 import Dict exposing (Dict)
-import Fifo exposing (Fifo)
 import Gen.Pages as Pages
 import Json.Auto.SpeedrunResult
 import Lamdera.Debug exposing (HttpError)
-import Shared exposing (Flags)
+import Shared
 import Url exposing (Url)
 
 
@@ -18,36 +18,6 @@ type alias FrontendModel =
     , shared : Shared.Model
     , page : Pages.Model
     }
-
-
-type alias SiteRequest =
-    { url : String
-    , mobileResult :
-        Maybe
-            (Result
-                HttpError
-                { performance : Float
-                , accessibility : Float
-                , bestPractices : Float
-                , seo : Float
-                }
-            )
-    , desktopResult :
-        Maybe
-            (Result
-                HttpError
-                { performance : Float
-                , accessibility : Float
-                , bestPractices : Float
-                , seo : Float
-                }
-            )
-    , attempts : Int
-    }
-
-type SiteRequestType 
-    = Mobile
-    | Desktop
 
 
 type FrontendMsg
@@ -60,9 +30,7 @@ type FrontendMsg
 
 type alias BackendModel =
     { message : String
-    , siteList : Bridge.SiteList
-    , sitesQueuedForRetrieval : Dict String SiteRequest
-    , sitesRetrieved : Dict String SiteRequest
+    , sites : Dict String Site
     }
 
 
@@ -71,11 +39,10 @@ type alias ToBackend =
 
 
 type BackendMsg
-    = GotSiteStats SiteRequest SiteRequestType (Result HttpError Json.Auto.SpeedrunResult.Root)
-    | RequestSiteStats
+    = GotSiteStats String SiteScoreType (Result HttpError Json.Auto.SpeedrunResult.Root)
     | NoOpBackendMsg
 
 
 type ToFrontend
-    = UpdateSiteList Bridge.SiteList
+    = UpdateSiteList (Dict String Site)
     | NoOpToFrontend

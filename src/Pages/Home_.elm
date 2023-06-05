@@ -1,15 +1,16 @@
 module Pages.Home_ exposing (Model, Msg(..), page)
 
-import Bridge
+import Api.Site exposing (Score(..), Site)
 import Dict
-import Html exposing (..)
-import Html.Attributes exposing (class, classList)
-import Html.Events as Events
-import Lamdera
+import Element exposing (centerX, column, el, fill, fillPortion, layout, padding, paddingXY, rgb, rgba, row, shrink, spacing, table, text, width)
+import Element.Border as Border
+import Element.Font as Font exposing (Font)
+import Html.Attributes exposing (class)
 import Page
 import Request exposing (Request)
 import Shared
-import String exposing (fromInt)
+import String exposing (fromFloat, fromInt)
+import UI.Table exposing (siteScoresTable)
 import View exposing (View)
 
 
@@ -64,31 +65,16 @@ subscriptions _ =
 
 view : Shared.Model -> Model -> View Msg
 view shared model =
+    let
+        siteList =
+            shared.siteList |> Dict.values
+    in
     { title = ""
     , body =
-        [   p [class "main-text"] [text "A List of Sites with Core Web Vitals Scores"],
-            table [ class "styled-table" ]
-            (tr []
-                [ th [] [ text "Domain" ]
-                , th [] [ text "Category" ]
-                , th [] [ text "Frontend Language" ]
-                , th [] [ text "Mobile Score" ]
-                , th [] [ text "Desktop Score" ]
+        [ layout [ width fill, paddingXY 50 20 ] <|
+            column [ width fill, spacing 50 ]
+                [ el [ centerX ] <| text "A list of sites with Core Web Vitals scores."
+                , siteScoresTable siteList
                 ]
-                :: (shared.siteList
-                        |> Dict.toList
-                        |> List.filter (\( k, v ) -> v.approved)
-                        |> List.map
-                            (\( k, v ) ->
-                                tr []
-                                    [ td [] [ text v.domain ]
-                                    , td [] [ text v.category ]
-                                    , td [] [ text v.frontendLang ]
-                                    , td [] [ text <| fromInt <| v.mobileScore ]
-                                    , td [] [ text <| fromInt <| v.desktopScore ]
-                                    ]
-                            )
-                   )
-            )
         ]
     }
