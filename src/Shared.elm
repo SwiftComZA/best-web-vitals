@@ -13,6 +13,7 @@ import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (class, href, rel)
 import Request exposing (Request)
+import UI.Navbar as Navbar
 import View exposing (View)
 
 
@@ -73,7 +74,8 @@ view req { page, toMsg } model =
     , body =
         css
             ++ [ div [ class "layout" ]
-                    [ div [ class "page" ] page.body
+                    [ Navbar.view
+                    , div [ class "page" ] page.body
                     ]
                ]
     }
