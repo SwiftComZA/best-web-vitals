@@ -1,8 +1,8 @@
 module Styles exposing (..)
 
 import Element exposing (..)
-import Element.Border as Border
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 
 
@@ -12,6 +12,7 @@ color =
     , lightBlue = rgb255 0xC5 0xE8 0xF7
     , lightGrey = rgb255 0xE0 0xE0 0xE0
     , white = rgb255 0xFF 0xFF 0xFF
+    , ref = rgb255 0xFF 0x00 0x00
     }
 
 

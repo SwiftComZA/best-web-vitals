@@ -7,4 +7,5 @@ module Bridge exposing (..)
 type ToBackend
     = FetchSites
     | RequestSiteStats String
+    | DeleteSite String
     | NoOpToBackend

@@ -6,3 +6,4 @@ dist
 # MacOS weird stuff
 .DS_Store
 PageSpeedAPIKey
+.vscode

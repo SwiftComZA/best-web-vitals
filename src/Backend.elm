@@ -126,6 +126,15 @@ updateFromFrontend sessionId clientId msg model =
             , requestSiteStats siteUrl
             )
 
+        DeleteSite siteUrl ->
+            let
+                newModel =
+                    { model | sites = model.sites |> Dict.remove siteUrl }
+            in
+            ( newModel
+            , sendToFrontend clientId <| UpdateSiteList newModel.sites
+            )
+
 
 proxy : String
 proxy =
