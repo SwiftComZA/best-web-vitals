@@ -2,9 +2,13 @@ module Evergreen.V1.Types exposing (..)
 
 import Browser
 import Browser.Navigation
+import Dict
+import Evergreen.V1.Api.Site
 import Evergreen.V1.Bridge
 import Evergreen.V1.Gen.Pages
+import Evergreen.V1.Json.Auto.SpeedrunResult
 import Evergreen.V1.Shared
+import Lamdera.Debug
 import Url
 
 
@@ -18,7 +22,7 @@ type alias FrontendModel =
 
 type alias BackendModel =
     { message : String
-    , siteList : Evergreen.V1.Bridge.SiteList
+    , sites : Dict.Dict String Evergreen.V1.Api.Site.Site
     }
 
 
@@ -35,9 +39,10 @@ type alias ToBackend =
 
 
 type BackendMsg
-    = NoOpBackendMsg
+    = GotSiteStats String Evergreen.V1.Api.Site.SiteScoreType (Result Lamdera.Debug.HttpError Evergreen.V1.Json.Auto.SpeedrunResult.Root)
+    | NoOpBackendMsg
 
 
 type ToFrontend
-    = UpdateSiteList Evergreen.V1.Bridge.SiteList
+    = UpdateSiteList (Dict.Dict String Evergreen.V1.Api.Site.Site)
     | NoOpToFrontend

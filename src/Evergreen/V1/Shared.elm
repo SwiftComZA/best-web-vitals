@@ -1,12 +1,13 @@
 module Evergreen.V1.Shared exposing (..)
 
-import Evergreen.V1.Bridge
+import Dict
+import Evergreen.V1.Api.Site
 
 
 type alias Model =
-    { siteList : Evergreen.V1.Bridge.SiteList
+    { siteList : Dict.Dict String Evergreen.V1.Api.Site.Site
     }
 
 
 type Msg
-    = UpdateSiteList Evergreen.V1.Bridge.SiteList
+    = UpdateSiteList (Dict.Dict String Evergreen.V1.Api.Site.Site)
