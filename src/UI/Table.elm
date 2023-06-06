@@ -1,10 +1,11 @@
 module UI.Table exposing (..)
 
 import Api.Site exposing (Score(..), Site)
-import Element exposing (centerX, el, fill, fillPortion, padding, rgba, row, table, text, width)
+import Element exposing (centerX, column, el, fill, fillPortion, padding, paddingEach, rgba, row, table, text, width)
 import Element.Border as Border
 import Element.Font as Font
 import String exposing (fromInt)
+import Styles exposing (noPadding)
 
 
 siteScoresTable : List Site -> Element.Element msg
@@ -31,7 +32,17 @@ siteScoresTable siteList =
 
 tableScoreColumns : List (Element.Column Site msg)
 tableScoreColumns =
-    [ { header = tableCell [ Font.center, Font.bold ] <| text "Mobile Score"
+    [ { header =
+            tableCell [ Font.bold, width fill ] <|
+                column [ width fill, centerX, Font.center ]
+                    [ el [ centerX ] <| text "Mobile Score"
+                    , row [ width fill, paddingEach { noPadding | top = 10 } ]
+                        [ el [ width fill ] <| text "perf"
+                        , el [ width fill ] <| text "a11y"
+                        , el [ width fill ] <| text "bp"
+                        , el [ width fill ] <| text "seo"
+                        ]
+                    ]
       , width = fillPortion 2
       , view =
             \site ->
@@ -51,7 +62,17 @@ tableScoreColumns =
                                 , el [ width fill, Font.center ] <| text <| fromInt <| round <| score.seo * 100
                                 ]
       }
-    , { header = tableCell [ Font.center, Font.bold ] <| text "Desktop Score"
+    , { header =
+            tableCell [ Font.bold, width fill ] <|
+                column [ width fill, centerX, Font.center ]
+                    [ el [ centerX ] <| text "Desktop Score"
+                    , row [ width fill, paddingEach { noPadding | top = 10 } ]
+                        [ el [ width fill ] <| text "perf"
+                        , el [ width fill ] <| text "a11y"
+                        , el [ width fill ] <| text "bp"
+                        , el [ width fill ] <| text "seo"
+                        ]
+                    ]
       , width = fillPortion 2
       , view =
             \site ->

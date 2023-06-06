@@ -1,6 +1,6 @@
 module Types exposing (..)
 
-import Api.Site exposing (Site, SiteScoreType)
+import Api.Site exposing (ScoreDevice, Site)
 import Bridge
 import Browser
 import Browser.Navigation exposing (Key)
@@ -39,7 +39,7 @@ type alias ToBackend =
 
 
 type BackendMsg
-    = GotSiteStats String SiteScoreType (Result HttpError Json.Auto.SpeedrunResult.Root)
+    = GotSiteStats String ScoreDevice (Result HttpError Json.Auto.SpeedrunResult.Root)
     | NoOpBackendMsg
 
 

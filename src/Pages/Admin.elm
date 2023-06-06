@@ -1,17 +1,20 @@
 module Pages.Admin exposing (Model, Msg(..), page)
 
-import Api.Site exposing (Score(..), Site)
+import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..))
 import Bridge exposing (ToBackend(..))
 import Dict
+import Effect exposing (Effect)
 import Element
     exposing
         ( centerX
+        , column
         , el
         , fill
         , fillPortion
         , layout
         , mouseOver
         , padding
+        , paddingEach
         , paddingXY
         , pointer
         , rgb
@@ -29,14 +32,15 @@ import Page
 import Request exposing (Request)
 import Shared
 import String exposing (fromInt)
+import Styles exposing (noPadding)
 import View exposing (View)
 
 
 page : Shared.Model -> Request -> Page.With Model Msg
-page shared _ =
-    Page.element
+page shared req =
+    Page.advanced
         { init = init shared
-        , update = update shared
+        , update = update req
         , subscriptions = subscriptions
         , view = view shared
         }
@@ -50,10 +54,10 @@ type alias Model =
     ()
 
 
-init : Shared.Model -> ( Model, Cmd Msg )
+init : Shared.Model -> ( Model, Effect Msg )
 init shared =
     ( ()
-    , Cmd.none
+    , Effect.none
     )
 
 
@@ -63,13 +67,17 @@ init shared =
 
 type Msg
     = DeleteSite String
+    | ChangeSort Sort
 
 
-update : Shared.Model -> Msg -> Model -> ( Model, Cmd Msg )
-update shared msg model =
+update : Request -> Msg -> Model -> ( Model, Effect Msg )
+update req msg model =
     case msg of
         DeleteSite siteUrl ->
-            ( model, sendToBackend <| Bridge.DeleteSite siteUrl )
+            ( model, Effect.fromCmd <| sendToBackend <| Bridge.DeleteSite siteUrl )
+
+        ChangeSort sort ->
+            ( model, Effect.fromShared <| Shared.ChangeSort sort )
 
 
 subscriptions : Model -> Sub Msg
@@ -85,7 +93,7 @@ view : Shared.Model -> Model -> View Msg
 view shared model =
     let
         siteList =
-            shared.siteList |> Dict.values
+            shared.siteList |> Dict.values |> Site.sort shared.sort
     in
     { title = ""
     , body =
@@ -98,15 +106,15 @@ siteScoresTable siteList =
     table [ centerX, Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 } ]
         { data = siteList
         , columns =
-            [ { header = tableCell [ Font.bold ] <| text "Domain"
+            [ { header = tableCell [ Font.bold, pointer, onClick <| ChangeSort Domain ] <| text "Domain"
               , width = fillPortion 2
               , view = \site -> tableCell [] <| text site.url
               }
-            , { header = tableCell [ Font.center, Font.bold ] <| text "Category"
+            , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ChangeSort Category ] <| text "Category"
               , width = fillPortion 2
               , view = \site -> tableCell [ Font.center ] <| text "..."
               }
-            , { header = tableCell [ Font.center, Font.bold ] <| text "Frontend Language"
+            , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ChangeSort FrontendLang ] <| text "Frontend Language"
               , width = fillPortion 2
               , view = \site -> tableCell [ Font.center ] <| text "..."
               }
@@ -133,10 +141,20 @@ siteScoresTable siteList =
         }
 
 
-tableScoreColumns : List (Element.Column Site msg)
+tableScoreColumns : List (Element.Column Site Msg)
 tableScoreColumns =
-    [ { header = tableCell [ Font.center, Font.bold ] <| text "Mobile Score"
-      , width = fillPortion 4
+    [ { header =
+            tableCell [ Font.bold, width fill ] <|
+                column [ width fill, centerX, Font.center ]
+                    [ el [ centerX ] <| text "Mobile Score"
+                    , row [ width fill, paddingEach { noPadding | top = 10 } ]
+                        [ el [ width fill, pointer, onClick <| ChangeSort (MobileScore Perf) ] <| text "perf"
+                        , el [ width fill, pointer, onClick <| ChangeSort (MobileScore A11y) ] <| text "a11y"
+                        , el [ width fill, pointer, onClick <| ChangeSort (MobileScore BP) ] <| text "bp"
+                        , el [ width fill, pointer, onClick <| ChangeSort (MobileScore SEO) ] <| text "seo"
+                        ]
+                    ]
+      , width = fillPortion 2
       , view =
             \site ->
                 case site.mobileScore of
@@ -155,8 +173,18 @@ tableScoreColumns =
                                 , el [ width fill, Font.center ] <| text <| fromInt <| round <| score.seo * 100
                                 ]
       }
-    , { header = tableCell [ Font.center, Font.bold ] <| text "Desktop Score"
-      , width = fillPortion 4
+    , { header =
+            tableCell [ Font.bold, width fill ] <|
+                column [ width fill, centerX, Font.center ]
+                    [ el [ centerX ] <| text "Desktop Score"
+                    , row [ width fill, paddingEach { noPadding | top = 10 } ]
+                        [ el [ width fill, pointer, onClick <| ChangeSort (DesktopScore Perf) ] <| text "perf"
+                        , el [ width fill, pointer, onClick <| ChangeSort (DesktopScore A11y) ] <| text "a11y"
+                        , el [ width fill, pointer, onClick <| ChangeSort (DesktopScore BP) ] <| text "bp"
+                        , el [ width fill, pointer, onClick <| ChangeSort (DesktopScore SEO) ] <| text "seo"
+                        ]
+                    ]
+      , width = fillPortion 2
       , view =
             \site ->
                 case site.desktopScore of

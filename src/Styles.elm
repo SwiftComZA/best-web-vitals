@@ -16,6 +16,14 @@ color =
     }
 
 
+noPadding =
+    { top = 0
+    , bottom = 0
+    , left = 0
+    , right = 0
+    }
+
+
 buttonStyle =
     [ padding 10
     , Border.width 3

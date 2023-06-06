@@ -1,6 +1,6 @@
 module Backend exposing (..)
 
-import Api.Site exposing (Score(..), SiteScoreType(..))
+import Api.Site exposing (Score(..), ScoreDevice(..))
 import Bridge exposing (..)
 import Dict
 import Env

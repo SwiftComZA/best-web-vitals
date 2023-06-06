@@ -8,7 +8,7 @@ module Shared exposing
     , view
     )
 
-import Api.Site exposing (Site)
+import Api.Site exposing (Direction(..), ScoreType(..), Site, Sort(..))
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (class, href, rel)
@@ -27,12 +27,13 @@ type alias Flags =
 
 type alias Model =
     { siteList : Dict String Site
+    , sort : ( Sort, Direction )
     }
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
 init _ _ =
-    ( { siteList = Dict.empty }
+    ( { siteList = Dict.empty, sort = ( MobileScore Perf, Desc ) }
     , Cmd.none
     )
 
@@ -43,6 +44,7 @@ init _ _ =
 
 type Msg
     = UpdateSiteList (Dict String Site)
+    | ChangeSort Sort
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
@@ -52,6 +54,24 @@ update _ msg model =
             ( { model | siteList = siteList }
             , Cmd.none
             )
+
+        ChangeSort sort ->
+            let
+                newSort =
+                    if Tuple.first model.sort == sort then
+                        if Tuple.second model.sort == Asc then
+                            ( sort, Desc )
+
+                        else
+                            ( sort, Asc )
+
+                    else if sort == Domain then
+                        ( sort, Asc )
+
+                    else
+                        ( sort, Desc )
+            in
+            ( { model | sort = newSort }, Cmd.none )
 
 
 subscriptions : Request -> Model -> Sub Msg
