@@ -46,6 +46,7 @@ init shared =
 
 type Msg
     = ChangeSort Sort
+    | NoOp
 
 
 update : Request -> Msg -> Model -> ( Model, Effect Msg )
@@ -53,6 +54,9 @@ update req msg model =
     case msg of
         ChangeSort sort ->
             ( model, Effect.fromShared <| Shared.ChangeSort sort )
+
+        NoOp ->
+            ( model, Effect.none )
 
 
 subscriptions : Model -> Sub Msg
