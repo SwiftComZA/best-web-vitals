@@ -114,16 +114,23 @@ updateFromFrontend sessionId clientId msg model =
             ( model, sendToFrontend clientId <| UpdateSiteList model.sites )
 
         RequestSiteStats siteUrl ->
-            ( { model
-                | sites =
-                    model.sites
-                        |> Dict.insert siteUrl
-                            { url = siteUrl
-                            , mobileScore = Pending
-                            , desktopScore = Pending
-                            }
-              }
-            , requestSiteStats clientId siteUrl
+            let
+                newModel =
+                    { model
+                        | sites =
+                            model.sites
+                                |> Dict.insert siteUrl
+                                    { url = siteUrl
+                                    , mobileScore = Pending
+                                    , desktopScore = Pending
+                                    }
+                    }
+            in
+            ( newModel
+            , Cmd.batch
+                [ requestSiteStats clientId siteUrl
+                , sendToFrontend clientId <| UpdateSiteList newModel.sites
+                ]
             )
 
         DeleteSite siteUrl ->
