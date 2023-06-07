@@ -2,7 +2,7 @@ module Pages.AddSite exposing (Model, Msg, page)
 
 import Bridge
 import Effect exposing (Effect)
-import Element exposing (fill)
+import Element exposing (centerX, fill, paddingXY, spacing, width)
 import Element.Input as Input
 import Gen.Params.AddSite exposing (Params)
 import Html.Events
@@ -113,9 +113,9 @@ view : Model -> View Msg
 view model =
     { title = "Add Site"
     , body =
-        [ Element.layout [] <|
-            Element.column []
-                [ Element.row []
+        [ Element.layout [ width fill, paddingXY 50 100 ] <|
+            Element.column [ centerX ]
+                [ Element.row [ spacing 20 ]
                     [ Input.text
                         [ onEnter SubmitSite ]
                         { onChange = UpdateSite
@@ -129,15 +129,6 @@ view model =
                         , onPress = Just SubmitSite
                         }
                     ]
-                , Element.table []
-                    { data = model.queuedSites
-                    , columns =
-                        [ { header = Element.text "Queued Sites"
-                          , width = fill
-                          , view = \site -> Element.text site
-                          }
-                        ]
-                    }
                 ]
         ]
     }

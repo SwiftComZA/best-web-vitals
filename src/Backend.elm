@@ -40,7 +40,7 @@ init =
 update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
 update msg model =
     case msg of
-        GotSiteStats siteUrl device result ->
+        GotSiteStats clientId siteUrl device result ->
             let
                 maybeSiteScores =
                     model.sites |> Dict.get siteUrl
@@ -97,7 +97,7 @@ update msg model =
                     }
             in
             ( newModel
-            , Cmd.none
+            , sendToFrontend clientId <| UpdateSiteList newModel.sites
             )
 
         NoOpBackendMsg ->
@@ -123,7 +123,7 @@ updateFromFrontend sessionId clientId msg model =
                             , desktopScore = Pending
                             }
               }
-            , requestSiteStats siteUrl
+            , requestSiteStats clientId siteUrl
             )
 
         DeleteSite siteUrl ->
@@ -146,8 +146,8 @@ proxy =
             ""
 
 
-requestSiteStats : String -> Cmd BackendMsg
-requestSiteStats siteUrl =
+requestSiteStats : ClientId -> String -> Cmd BackendMsg
+requestSiteStats clientId siteUrl =
     let
         url =
             proxy
@@ -166,13 +166,13 @@ requestSiteStats siteUrl =
         mobileCmd =
             Http.get
                 { url = urlMobile
-                , expect = Http.expectJson (GotSiteStats siteUrl Mobile) Json.Auto.SpeedrunResult.rootDecoder
+                , expect = Http.expectJson (GotSiteStats clientId siteUrl Mobile) Json.Auto.SpeedrunResult.rootDecoder
                 }
 
         desktopCmd =
             Http.get
                 { url = urlDesktop
-                , expect = Http.expectJson (GotSiteStats siteUrl Desktop) Json.Auto.SpeedrunResult.rootDecoder
+                , expect = Http.expectJson (GotSiteStats clientId siteUrl Desktop) Json.Auto.SpeedrunResult.rootDecoder
                 }
     in
     Cmd.batch

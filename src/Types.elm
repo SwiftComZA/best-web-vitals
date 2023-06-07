@@ -7,6 +7,7 @@ import Browser.Navigation exposing (Key)
 import Dict exposing (Dict)
 import Gen.Pages as Pages
 import Json.Auto.SpeedrunResult
+import Lamdera exposing (ClientId)
 import Lamdera.Debug exposing (HttpError)
 import Shared
 import Url exposing (Url)
@@ -39,7 +40,7 @@ type alias ToBackend =
 
 
 type BackendMsg
-    = GotSiteStats String ScoreDevice (Result HttpError Json.Auto.SpeedrunResult.Root)
+    = GotSiteStats ClientId String ScoreDevice (Result HttpError Json.Auto.SpeedrunResult.Root)
     | NoOpBackendMsg
 
 
