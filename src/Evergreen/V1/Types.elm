@@ -39,7 +39,7 @@ type alias ToBackend =
 
 
 type BackendMsg
-    = GotSiteStats String Evergreen.V1.Api.Site.SiteScoreType (Result Lamdera.Debug.HttpError Evergreen.V1.Json.Auto.SpeedrunResult.Root)
+    = GotSiteStats String Evergreen.V1.Api.Site.ScoreDevice (Result Lamdera.Debug.HttpError Evergreen.V1.Json.Auto.SpeedrunResult.Root)
     | NoOpBackendMsg
 
 

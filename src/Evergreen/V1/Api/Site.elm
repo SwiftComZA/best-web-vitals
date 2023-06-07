@@ -22,6 +22,26 @@ type alias Site =
     }
 
 
-type SiteScoreType
+type ScoreType
+    = Perf
+    | A11y
+    | BP
+    | SEO
+
+
+type Sort
+    = Domain
+    | Category
+    | FrontendLang
+    | MobileScore ScoreType
+    | DesktopScore ScoreType
+
+
+type Direction
+    = Asc
+    | Desc
+
+
+type ScoreDevice
     = Mobile
     | Desktop
