@@ -8,6 +8,7 @@ import Evergreen.V1.Bridge
 import Evergreen.V1.Gen.Pages
 import Evergreen.V1.Json.Auto.SpeedrunResult
 import Evergreen.V1.Shared
+import Lamdera
 import Lamdera.Debug
 import Url
 
@@ -39,7 +40,7 @@ type alias ToBackend =
 
 
 type BackendMsg
-    = GotSiteStats String Evergreen.V1.Api.Site.ScoreDevice (Result Lamdera.Debug.HttpError Evergreen.V1.Json.Auto.SpeedrunResult.Root)
+    = GotSiteStats Lamdera.ClientId String Evergreen.V1.Api.Site.ScoreDevice (Result Lamdera.Debug.HttpError Evergreen.V1.Json.Auto.SpeedrunResult.Root)
     | NoOpBackendMsg
 
 
