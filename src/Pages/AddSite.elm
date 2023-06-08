@@ -74,10 +74,6 @@ update msg model =
             )
 
         Updated Category category ->
-            let
-                _ =
-                    Debug.log "selected category: " category
-            in
             ( { model | category = Just category }
             , Effect.none
             )
