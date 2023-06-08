@@ -1,6 +1,6 @@
 module Types exposing (..)
 
-import Api.Site exposing (ScoreDevice, Site)
+import Api.Site exposing (Category, FrontendLang, ScoreDevice, Site)
 import Bridge
 import Browser
 import Browser.Navigation exposing (Key)
@@ -9,6 +9,7 @@ import Gen.Pages as Pages
 import Json.Auto.SpeedrunResult
 import Lamdera exposing (ClientId)
 import Lamdera.Debug exposing (HttpError)
+import Set exposing (Set)
 import Shared
 import Url exposing (Url)
 
@@ -21,6 +22,14 @@ type alias FrontendModel =
     }
 
 
+type alias BackendModel =
+    { message : String
+    , sites : Dict String Site
+    , categories : Set Category
+    , frontendLangs : Set FrontendLang
+    }
+
+
 type FrontendMsg
     = ChangedUrl Url
     | ClickedLink Browser.UrlRequest
@@ -29,21 +38,18 @@ type FrontendMsg
     | Noop
 
 
-type alias BackendModel =
-    { message : String
-    , sites : Dict String Site
-    }
+type BackendMsg
+    = GotSiteStats ClientId String ScoreDevice (Result HttpError Json.Auto.SpeedrunResult.Root)
+    | NoOpBackendMsg
 
 
 type alias ToBackend =
     Bridge.ToBackend
 
 
-type BackendMsg
-    = GotSiteStats ClientId String ScoreDevice (Result HttpError Json.Auto.SpeedrunResult.Root)
-    | NoOpBackendMsg
-
-
 type ToFrontend
-    = UpdateSiteList (Dict String Site)
+    = PageMsg Pages.Msg
+    | SendSites (Dict String Site)
+    | SendCategories (List Category)
+    | SendFrontendLangs (List FrontendLang)
     | NoOpToFrontend

@@ -4,7 +4,6 @@ import Bridge exposing (ToBackend(..))
 import Browser
 import Browser.Dom
 import Browser.Navigation as Nav exposing (Key)
-import Dict
 import Effect
 import Gen.Model
 import Gen.Pages as Pages
@@ -134,8 +133,17 @@ updateFromBackend msg model =
         NoOpToFrontend ->
             ( model, Cmd.none )
 
-        UpdateSiteList siteList ->
-            update (Shared <| Shared.UpdateSiteList siteList) model
+        PageMsg pageMsg ->
+            update (Page pageMsg) model
+
+        SendSites siteList ->
+            update (Shared <| Shared.GotSites siteList) model
+
+        SendCategories categories ->
+            update (Shared <| Shared.GotCategories categories) model
+
+        SendFrontendLangs frontendLangs ->
+            update (Shared <| Shared.GotFrontendLangs frontendLangs) model
 
 
 

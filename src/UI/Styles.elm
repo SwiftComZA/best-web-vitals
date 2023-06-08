@@ -1,4 +1,4 @@
-module Styles exposing (..)
+module UI.Styles exposing (..)
 
 import Element exposing (..)
 import Element.Background as Background
@@ -26,21 +26,24 @@ noPadding =
 
 buttonStyle =
     [ padding 10
-    , Border.width 3
-    , Border.rounded 6
-    , Border.color color.blue
-    , Background.color color.lightBlue
-    , Font.variant Font.smallCaps
-
-    -- The order of mouseDown/mouseOver can be significant when changing
-    -- the same attribute in both
-    , mouseDown
-        [ Background.color color.blue
-        , Border.color color.blue
-        , Font.color color.white
-        ]
+    , Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }
+    , width fill
+    , Font.center
     , mouseOver
-        [ Background.color color.white
-        , Border.color color.lightGrey
+        [ Background.color color.lightBlue
         ]
+    , focused []
+    ]
+
+
+inputStyle =
+    [ Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }
+    , Border.width 0
+    , Border.rounded 0
+    , focused []
+    ]
+
+
+dropdownStyle =
+    [ Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = Element.rgba 0 0 0 0.15 }
     ]

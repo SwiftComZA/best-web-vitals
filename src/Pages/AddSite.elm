@@ -1,17 +1,18 @@
 module Pages.AddSite exposing (Model, Msg, page)
 
-import Bridge
+import Api.Site
+import Bridge exposing (..)
 import Effect exposing (Effect)
 import Element exposing (centerX, fill, paddingXY, spacing, width)
 import Element.Input as Input
 import Gen.Params.AddSite exposing (Params)
 import Html.Events
 import Json.Decode as Decode
-import Lamdera
 import Page
 import Request
 import Shared
-import Styles
+import UI.Styled as Styled
+import UI.Styles as Styles
 import View exposing (View)
 
 
@@ -20,7 +21,7 @@ page shared req =
     Page.advanced
         { init = init
         , update = update
-        , view = view
+        , view = view shared
         , subscriptions = subscriptions
         }
 
@@ -31,16 +32,21 @@ page shared req =
 
 type alias Model =
     { site : String
-    , queuedSites : List String
+    , category : Maybe Api.Site.Category
+    , frontendLang : Maybe Api.Site.FrontendLang
     }
 
 
 init : ( Model, Effect Msg )
 init =
     ( { site = ""
-      , queuedSites = []
+      , category = Nothing
+      , frontendLang = Nothing
       }
-    , Effect.none
+    , Effect.batch
+        [ Effect.fromCmd <| sendToBackend <| FetchCategories
+        , Effect.fromCmd <| sendToBackend <| FetchFrontendLangs
+        ]
     )
 
 
@@ -49,15 +55,35 @@ init =
 
 
 type Msg
-    = UpdateSite String
+    = Updated Field String
     | SubmitSite
+
+
+type Field
+    = Site
+    | Category
+    | FrontendLang
 
 
 update : Msg -> Model -> ( Model, Effect Msg )
 update msg model =
     case msg of
-        UpdateSite site ->
+        Updated Site site ->
             ( { model | site = site }
+            , Effect.none
+            )
+
+        Updated Category category ->
+            let
+                _ =
+                    Debug.log "selected category: " category
+            in
+            ( { model | category = Just category }
+            , Effect.none
+            )
+
+        Updated FrontendLang frontendLang ->
+            ( { model | frontendLang = Just frontendLang }
             , Effect.none
             )
 
@@ -74,9 +100,14 @@ update msg model =
                         _ ->
                             "https://" ++ model.site
             in
-            ( { model | queuedSites = validSite :: model.queuedSites, site = "" }
-            , Effect.fromCmd <| Lamdera.sendToBackend <| Bridge.RequestSiteStats validSite
-            )
+            case ( model.category, model.frontendLang ) of
+                ( Just category, Just frontendLang ) ->
+                    ( { model | site = "", category = Nothing, frontendLang = Nothing }
+                    , Effect.fromCmd <| sendToBackend <| RequestSiteStats validSite category frontendLang
+                    )
+
+                _ ->
+                    ( model, Effect.none )
 
 
 
@@ -109,24 +140,34 @@ onEnter msg =
         )
 
 
-view : Model -> View Msg
-view model =
+view : Shared.Model -> Model -> View Msg
+view shared model =
     { title = "Add Site"
     , body =
         [ Element.layout [ width fill, paddingXY 50 100 ] <|
             Element.column [ centerX ]
-                [ Element.row [ spacing 20 ]
+                [ Element.column [ spacing 20 ]
                     [ Input.text
-                        [ onEnter SubmitSite ]
-                        { onChange = UpdateSite
-                        , placeholder = Just <| Input.placeholder [] <| Element.text "Site"
+                        Styles.inputStyle
+                        { onChange = Updated Site
+                        , placeholder = Just <| Input.placeholder [] <| Element.text "Website"
                         , text = model.site
                         , label = Input.labelHidden ""
                         }
-                    , Input.button
-                        Styles.buttonStyle
+                    , Styled.dropdownWith Styles.dropdownStyle
+                        { label = "Category"
+                        , onChange = Updated Category
+                        }
+                        shared.categories
+                    , Styled.dropdownWith Styles.dropdownStyle
+                        { label = "Frontend Language"
+                        , onChange = Updated FrontendLang
+                        }
+                        shared.frontendLangs
+                    , Styled.submitButtonWith Styles.buttonStyle
                         { label = Element.text "Add Site"
                         , onPress = Just SubmitSite
+                        , disabled = model.category == Nothing || model.frontendLang == Nothing
                         }
                     ]
                 ]

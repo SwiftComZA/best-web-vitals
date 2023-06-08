@@ -2,10 +2,16 @@ module Api.Site exposing (..)
 
 
 type alias Site =
-    { url : String
+    { url : Url
     , mobileScore : Score
     , desktopScore : Score
+    , category : String
+    , frontendLang : String
     }
+
+
+type alias Url =
+    String
 
 
 type Score
@@ -25,6 +31,14 @@ type alias ScoreValue =
 type ScoreDevice
     = Mobile
     | Desktop
+
+
+type alias Category =
+    String
+
+
+type alias FrontendLang =
+    String
 
 
 type Sort

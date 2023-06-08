@@ -5,7 +5,7 @@ import Element exposing (centerX, column, el, fill, fillPortion, padding, paddin
 import Element.Border as Border
 import Element.Font as Font
 import String exposing (fromInt)
-import Styles exposing (noPadding)
+import UI.Styles exposing (noPadding)
 
 
 siteScoresTable : List Site -> Element.Element msg

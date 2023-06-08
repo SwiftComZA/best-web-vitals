@@ -7,6 +7,7 @@ import Env
 import Http
 import Json.Auto.SpeedrunResult
 import Lamdera exposing (..)
+import Set
 import Types exposing (..)
 
 
@@ -32,6 +33,8 @@ init : ( Model, Cmd BackendMsg )
 init =
     ( { message = "stub"
       , sites = Dict.empty
+      , categories = Set.empty
+      , frontendLangs = Set.empty
       }
     , Cmd.none
     )
@@ -42,11 +45,25 @@ update msg model =
     case msg of
         GotSiteStats clientId siteUrl device result ->
             let
-                maybeSiteScores =
+                maybeSite =
                     model.sites |> Dict.get siteUrl
 
                 newSiteScores =
                     { url = siteUrl
+                    , category =
+                        case maybeSite of
+                            Just siteScores ->
+                                siteScores.category
+
+                            Nothing ->
+                                ""
+                    , frontendLang =
+                        case maybeSite of
+                            Just siteScores ->
+                                siteScores.frontendLang
+
+                            Nothing ->
+                                ""
                     , mobileScore =
                         if device == Mobile then
                             case result of
@@ -62,7 +79,7 @@ update msg model =
                                     Failed
 
                         else
-                            case maybeSiteScores of
+                            case maybeSite of
                                 Just siteScores ->
                                     siteScores.mobileScore
 
@@ -83,7 +100,7 @@ update msg model =
                                     Failed
 
                         else
-                            case maybeSiteScores of
+                            case maybeSite of
                                 Just siteScores ->
                                     siteScores.desktopScore
 
@@ -97,7 +114,7 @@ update msg model =
                     }
             in
             ( newModel
-            , sendToFrontend clientId <| UpdateSiteList newModel.sites
+            , sendToFrontend clientId <| SendSites newModel.sites
             )
 
         NoOpBackendMsg ->
@@ -111,9 +128,15 @@ updateFromFrontend sessionId clientId msg model =
             ( model, Cmd.none )
 
         FetchSites ->
-            ( model, sendToFrontend clientId <| UpdateSiteList model.sites )
+            ( model, sendToFrontend clientId <| SendSites model.sites )
 
-        RequestSiteStats siteUrl ->
+        FetchCategories ->
+            ( model, sendToFrontend clientId <| SendCategories <| Set.toList <| model.categories )
+
+        FetchFrontendLangs ->
+            ( model, sendToFrontend clientId <| SendFrontendLangs <| Set.toList <| model.frontendLangs )
+
+        RequestSiteStats siteUrl category frontendLang ->
             let
                 newModel =
                     { model
@@ -123,14 +146,34 @@ updateFromFrontend sessionId clientId msg model =
                                     { url = siteUrl
                                     , mobileScore = Pending
                                     , desktopScore = Pending
+                                    , category = category
+                                    , frontendLang = frontendLang
                                     }
                     }
             in
             ( newModel
             , Cmd.batch
                 [ requestSiteStats clientId siteUrl
-                , sendToFrontend clientId <| UpdateSiteList newModel.sites
+                , sendToFrontend clientId <| SendSites newModel.sites
                 ]
+            )
+
+        AddCategory category ->
+            let
+                newModel =
+                    { model | categories = model.categories |> Set.insert category }
+            in
+            ( newModel
+            , sendToFrontend clientId <| SendCategories <| Set.toList <| newModel.categories
+            )
+
+        AddFrontendLang frontendLang ->
+            let
+                newModel =
+                    { model | frontendLangs = model.frontendLangs |> Set.insert frontendLang }
+            in
+            ( newModel
+            , sendToFrontend clientId <| SendFrontendLangs <| Set.toList <| newModel.frontendLangs
             )
 
         DeleteSite siteUrl ->
@@ -139,7 +182,25 @@ updateFromFrontend sessionId clientId msg model =
                     { model | sites = model.sites |> Dict.remove siteUrl }
             in
             ( newModel
-            , sendToFrontend clientId <| UpdateSiteList newModel.sites
+            , sendToFrontend clientId <| SendSites newModel.sites
+            )
+
+        DeleteCategory category ->
+            let
+                newModel =
+                    { model | categories = model.categories |> Set.remove category }
+            in
+            ( newModel
+            , sendToFrontend clientId <| SendCategories <| Set.toList <| newModel.categories
+            )
+
+        DeleteFrontendLang frontendLang ->
+            let
+                newModel =
+                    { model | frontendLangs = model.frontendLangs |> Set.remove frontendLang }
+            in
+            ( newModel
+            , sendToFrontend clientId <| SendFrontendLangs <| Set.toList <| newModel.frontendLangs
             )
 
 

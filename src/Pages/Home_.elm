@@ -11,7 +11,8 @@ import Page
 import Request exposing (Request)
 import Shared
 import String exposing (fromInt)
-import Styles exposing (noPadding)
+import UI.Styled as Styled
+import UI.Styles exposing (noPadding)
 import View exposing (View)
 
 
@@ -45,14 +46,14 @@ init shared =
 
 
 type Msg
-    = ChangeSort Sort
+    = ClickedChangeSort Sort
     | NoOp
 
 
 update : Request -> Msg -> Model -> ( Model, Effect Msg )
 update req msg model =
     case msg of
-        ChangeSort sort ->
+        ClickedChangeSort sort ->
             ( model, Effect.fromShared <| Shared.ChangeSort sort )
 
         NoOp ->
@@ -71,15 +72,15 @@ subscriptions _ =
 view : Shared.Model -> Model -> View Msg
 view shared model =
     let
-        siteList =
-            shared.siteList |> Dict.values |> Site.sort shared.sort
+        sites =
+            shared.sites |> Dict.values |> Site.sort shared.sort
     in
     { title = ""
     , body =
         [ layout [ width fill, paddingXY 50 20 ] <|
             column [ width fill, spacing 50 ]
-                [ el [ centerX ] <| text "A list of sites with Core Web Vitals scores."
-                , siteScoresTable siteList
+                [ Styled.textWith [ centerX ] "A list of sites with Core Web Vitals scores."
+                , siteScoresTable sites
                 ]
         ]
     }
@@ -90,17 +91,17 @@ siteScoresTable siteList =
     table [ centerX, Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 } ]
         { data = siteList
         , columns =
-            [ { header = tableCell [ Font.bold, pointer, onClick <| ChangeSort Domain ] <| text "Domain"
+            [ { header = tableCell [ Font.bold, pointer, onClick <| ClickedChangeSort Domain ] <| text "Domain"
               , width = fillPortion 1
               , view = \site -> tableCell [] <| text site.url
               }
-            , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ChangeSort Category ] <| text "Category"
+            , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ClickedChangeSort Category ] <| text "Category"
               , width = fillPortion 1
-              , view = \site -> tableCell [ Font.center ] <| text "..."
+              , view = \site -> tableCell [ Font.center ] <| text site.category
               }
-            , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ChangeSort FrontendLang ] <| text "Frontend Language"
+            , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ClickedChangeSort FrontendLang ] <| text "Frontend Language"
               , width = fillPortion 1
-              , view = \site -> tableCell [ Font.center ] <| text "..."
+              , view = \site -> tableCell [ Font.center ] <| text site.frontendLang
               }
             ]
                 ++ tableScoreColumns
@@ -112,12 +113,12 @@ tableScoreColumns =
     [ { header =
             tableCell [ Font.bold, width fill ] <|
                 column [ width fill, centerX, Font.center ]
-                    [ el [ centerX, pointer, onClick <| ChangeSort (MobileScore Perf) ] <| text "Mobile Score"
+                    [ el [ centerX, pointer, onClick <| ClickedChangeSort (MobileScore Perf) ] <| text "Mobile Score"
                     , row [ width fill, paddingEach { noPadding | top = 10 } ]
-                        [ el [ width fill, Font.center, pointer, onClick <| ChangeSort (MobileScore Perf) ] <| text "perf"
-                        , el [ width fill, Font.center, pointer, onClick <| ChangeSort (MobileScore A11y) ] <| text "a11y"
-                        , el [ width fill, Font.center, pointer, onClick <| ChangeSort (MobileScore BP) ] <| text "bp"
-                        , el [ width fill, Font.center, pointer, onClick <| ChangeSort (MobileScore SEO) ] <| text "seo"
+                        [ el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore Perf) ] <| text "perf"
+                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore A11y) ] <| text "a11y"
+                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore BP) ] <| text "bp"
+                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore SEO) ] <| text "seo"
                         ]
                     ]
       , width = fillPortion 2
@@ -142,12 +143,12 @@ tableScoreColumns =
     , { header =
             tableCell [ Font.bold, width fill ] <|
                 column [ width fill, centerX, Font.center ]
-                    [ el [ centerX, pointer, onClick <| ChangeSort (DesktopScore Perf) ] <| text "Desktop Score"
+                    [ el [ centerX, pointer, onClick <| ClickedChangeSort (DesktopScore Perf) ] <| text "Desktop Score"
                     , row [ width fill, paddingEach { noPadding | top = 10 } ]
-                        [ el [ width fill, Font.center, pointer, onClick <| ChangeSort (DesktopScore Perf) ] <| text "perf"
-                        , el [ width fill, Font.center, pointer, onClick <| ChangeSort (DesktopScore A11y) ] <| text "a11y"
-                        , el [ width fill, Font.center, pointer, onClick <| ChangeSort (DesktopScore BP) ] <| text "bp"
-                        , el [ width fill, Font.center, pointer, onClick <| ChangeSort (DesktopScore SEO) ] <| text "seo"
+                        [ el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (DesktopScore Perf) ] <| text "perf"
+                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (DesktopScore A11y) ] <| text "a11y"
+                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (DesktopScore BP) ] <| text "bp"
+                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (DesktopScore SEO) ] <| text "seo"
                         ]
                     ]
       , width = fillPortion 2
