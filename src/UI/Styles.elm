@@ -53,7 +53,8 @@ dropdownStyle =
 
 footerStyle =
     [ style "height" "50px"
-    , style "position" "sticky"
+
+    -- , style "position" "sticky"
     , style "width" "100%"
     , style "bottom" "0"
     , style "box-shadow" "0px 0px 20px 0px rgba(0,0,0,0.15)"

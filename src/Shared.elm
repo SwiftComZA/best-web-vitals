@@ -4,7 +4,7 @@ import Api.Site exposing (Category, Direction(..), FrontendLang, ScoreType(..), 
 import Api.User exposing (User)
 import Bridge exposing (ToBackend(..), sendToBackend)
 import Dict exposing (Dict)
-import Element exposing (alignLeft, alignRight, centerX, centerY, el, fill, height, layout, link, mouseOver, paddingEach, pointer, px, rgb255, rgba, row, width)
+import Element exposing (alignLeft, alignRight, centerX, centerY, el, fill, height, htmlAttribute, layout, link, mouseOver, paddingEach, pointer, px, rgb255, rgba, row, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -133,7 +133,7 @@ view _ { page, toMsg } model =
                             |> Maybe.boolToBool
                         )
                         toMsg
-                    , div [ class "page", style "height" "calc(100vh - 125px)" ] page.body
+                    , div [ class "page", style "min-height" "calc(100vh - 225px)", style "padding-bottom" "100px" ] page.body
                     , div footerStyle
                         [ div []
                             [ Html.text "Contact: "
