@@ -138,7 +138,7 @@ view _ { page, toMsg } model =
                         [ div []
                             [ Html.text "Contact: "
                             , a
-                                [ href "mailto:chris@swiftcom.app"
+                                [ href "mailto:hello@swiftcom.app"
                                 , style "text-decoration" "none"
                                 ]
                                 [ text "SwiftCom" ]
