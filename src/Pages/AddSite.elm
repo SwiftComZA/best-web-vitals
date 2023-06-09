@@ -96,7 +96,7 @@ update msg model =
             in
             case ( model.category, model.frontendLang ) of
                 ( Just category, Just frontendLang ) ->
-                    ( { model | site = "", category = Nothing, frontendLang = Nothing }
+                    ( { model | site = "" }
                     , Effect.fromCmd <| sendToBackend <| RequestSiteStats validSite category frontendLang
                     )
 

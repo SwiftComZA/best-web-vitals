@@ -3,7 +3,7 @@ module Pages.Home_ exposing (Model, Msg(..), page)
 import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..))
 import Dict
 import Effect exposing (Effect)
-import Element exposing (centerX, column, el, fill, fillPortion, layout, padding, paddingEach, paddingXY, pointer, rgba, row, spacing, table, text, width)
+import Element exposing (centerX, column, el, fill, fillPortion, layout, padding, paddingEach, paddingXY, pointer, px, rgba, row, spacing, table, text, width)
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
@@ -86,11 +86,11 @@ view shared model =
     in
     { title = ""
     , body =
-        [ layout [ width fill, paddingXY 50 20 ] <|
+        [ layout [ width fill, paddingXY 50 50 ] <|
             column [ width fill, spacing 50 ]
-                [ Styled.textWith [ centerX ] "A list of sites with Core Web Vitals scores."
+                [ Styled.textWith [ centerX, Font.bold ] "A list of sites with Core Web Vitals scores."
                 , Input.text
-                    Styles.inputStyle
+                    (Styles.inputStyle ++ [ width <| px 400, centerX ])
                     { onChange = UpdatedSearchTerm
                     , placeholder = Just <| Input.placeholder [] <| Element.text "Search"
                     , text = model.searchTerm
