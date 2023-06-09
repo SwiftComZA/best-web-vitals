@@ -4,15 +4,16 @@ import Api.Site exposing (Category, Direction(..), FrontendLang, ScoreType(..), 
 import Api.User exposing (User)
 import Bridge exposing (ToBackend(..), sendToBackend)
 import Dict exposing (Dict)
-import Element exposing (alignLeft, alignRight, centerX, centerY, el, fill, height, layout, link, mouseOver, pointer, px, rgb255, rgba, row, width)
+import Element exposing (alignLeft, alignRight, centerX, centerY, el, fill, height, layout, link, mouseOver, paddingEach, pointer, px, rgb255, rgba, row, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
 import Html exposing (..)
-import Html.Attributes exposing (class, href, rel)
+import Html.Attributes exposing (class, href, id, rel, src, style, type_)
 import Request exposing (Request)
 import UI.Styled as Styled
+import UI.Styles exposing (footerStyle, noPadding)
 import Utils.If exposing (viewIf)
 import Utils.Maybe as Maybe
 import View exposing (View)
@@ -126,8 +127,26 @@ view _ { page, toMsg } model =
     , body =
         css
             ++ [ div [ class "layout" ]
-                    [ navbar (Maybe.toBool <| model.user) (model.user |> Maybe.map (\u -> u.isAdmin) |> Maybe.boolToBool) toMsg
-                    , div [ class "page" ] page.body
+                    [ navbar (Maybe.toBool <| model.user)
+                        (model.user
+                            |> Maybe.map (\u -> u.isAdmin)
+                            |> Maybe.boolToBool
+                        )
+                        toMsg
+                    , div [ class "page", style "height" "calc(100vh - 125px)" ] page.body
+                    , div footerStyle
+                        [ div []
+                            [ Html.text "Contact: "
+                            , a
+                                [ href "mailto:chris@swiftcom.app"
+                                , style "text-decoration" "none"
+                                ]
+                                [ text "SwiftCom" ]
+                            ]
+                        , div [] [ Html.text "Built with ♥ and Elm" ]
+                        ]
+
+                    -- , footer
                     ]
                ]
     }

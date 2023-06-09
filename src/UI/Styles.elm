@@ -4,6 +4,7 @@ import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Html.Attributes exposing (style)
 
 
 color =
@@ -47,4 +48,20 @@ inputStyle =
 
 dropdownStyle =
     [ Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = Element.rgba 0 0 0 0.15 }
+    ]
+
+
+footerStyle =
+    [ style "height" "50px"
+    , style "position" "sticky"
+    , style "width" "100%"
+    , style "bottom" "0"
+    , style "box-shadow" "0px 0px 20px 0px rgba(0,0,0,0.15)"
+    , style "font-family" "\"Open Sans\", Helvetica, Verdana, sans-serif"
+    , style "display" "flex"
+    , style "justify-content" "space-between"
+    , style "align-items" "center"
+    , style "padding" "0 20px"
+    , style "box-sizing" "border-box"
+    , style "background" "white"
     ]
