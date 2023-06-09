@@ -6,7 +6,9 @@ import ElmSpa.Page
 import Gen.Params.AddSite
 import Gen.Params.Admin
 import Gen.Params.Home_
+import Gen.Params.Login
 import Gen.Params.NotFound
+import Gen.Params.Register
 import Gen.Model as Model
 import Gen.Msg as Msg
 import Gen.Route as Route exposing (Route)
@@ -14,7 +16,9 @@ import Page exposing (Page)
 import Pages.AddSite
 import Pages.Admin
 import Pages.Home_
+import Pages.Login
 import Pages.NotFound
+import Pages.Register
 import Request exposing (Request)
 import Shared
 import Task
@@ -42,8 +46,14 @@ init route =
         Route.Home_ ->
             pages.home_.init ()
     
+        Route.Login ->
+            pages.login.init ()
+    
         Route.NotFound ->
             pages.notFound.init ()
+    
+        Route.Register ->
+            pages.register.init ()
 
 
 update : Msg -> Model -> Shared.Model -> Url -> Key -> ( Model, Effect Msg )
@@ -57,6 +67,12 @@ update msg_ model_ =
     
         ( Msg.Home_ msg, Model.Home_ params model ) ->
             pages.home_.update params msg model
+    
+        ( Msg.Login msg, Model.Login params model ) ->
+            pages.login.update params msg model
+    
+        ( Msg.Register msg, Model.Register params model ) ->
+            pages.register.update params msg model
 
         _ ->
             \_ _ _ -> ( model_, Effect.none )
@@ -77,8 +93,14 @@ view model_ =
         Model.Home_ params model ->
             pages.home_.view params model
     
+        Model.Login params model ->
+            pages.login.view params model
+    
         Model.NotFound params ->
             pages.notFound.view params ()
+    
+        Model.Register params model ->
+            pages.register.view params model
 
 
 subscriptions : Model -> Shared.Model -> Url -> Key -> Sub Msg
@@ -96,8 +118,14 @@ subscriptions model_ =
         Model.Home_ params model ->
             pages.home_.subscriptions params model
     
+        Model.Login params model ->
+            pages.login.subscriptions params model
+    
         Model.NotFound params ->
             pages.notFound.subscriptions params ()
+    
+        Model.Register params model ->
+            pages.register.subscriptions params model
 
 
 
@@ -108,13 +136,17 @@ pages :
     { addSite : Bundle Gen.Params.AddSite.Params Pages.AddSite.Model Pages.AddSite.Msg
     , admin : Bundle Gen.Params.Admin.Params Pages.Admin.Model Pages.Admin.Msg
     , home_ : Bundle Gen.Params.Home_.Params Pages.Home_.Model Pages.Home_.Msg
+    , login : Bundle Gen.Params.Login.Params Pages.Login.Model Pages.Login.Msg
     , notFound : Static Gen.Params.NotFound.Params
+    , register : Bundle Gen.Params.Register.Params Pages.Register.Model Pages.Register.Msg
     }
 pages =
     { addSite = bundle Pages.AddSite.page Model.AddSite Msg.AddSite
     , admin = bundle Pages.Admin.page Model.Admin Msg.Admin
     , home_ = bundle Pages.Home_.page Model.Home_ Msg.Home_
+    , login = bundle Pages.Login.page Model.Login Msg.Login
     , notFound = static Pages.NotFound.view Model.NotFound
+    , register = bundle Pages.Register.page Model.Register Msg.Register
     }
 
 

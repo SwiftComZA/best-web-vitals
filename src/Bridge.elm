@@ -14,7 +14,10 @@ sendToBackend =
 
 
 type ToBackend
-    = FetchSites
+    = AttemptRegistration { username : String, email : String, password : String }
+    | AttemptSignIn { email : String, password : String }
+    | AttemptSignOut
+    | FetchSites
     | FetchCategories
     | FetchFrontendLangs
     | RequestSiteStats Url Category FrontendLang

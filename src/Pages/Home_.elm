@@ -7,20 +7,21 @@ import Element exposing (centerX, column, el, fill, fillPortion, layout, padding
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
+import Element.Input as Input
 import Page
 import Request exposing (Request)
 import Shared
 import String exposing (fromInt)
 import UI.Styled as Styled
-import UI.Styles exposing (noPadding)
+import UI.Styles as Styles exposing (noPadding)
 import View exposing (View)
 
 
 page : Shared.Model -> Request -> Page.With Model Msg
-page shared req =
+page shared _ =
     Page.advanced
-        { init = init shared
-        , update = update req
+        { init = init
+        , update = update
         , subscriptions = subscriptions
         , view = view shared
         }
@@ -31,12 +32,13 @@ page shared req =
 
 
 type alias Model =
-    ()
+    { searchTerm : String
+    }
 
 
-init : Shared.Model -> ( Model, Effect Msg )
-init shared =
-    ( ()
+init : ( Model, Effect Msg )
+init =
+    ( { searchTerm = "" }
     , Effect.none
     )
 
@@ -47,14 +49,18 @@ init shared =
 
 type Msg
     = ClickedChangeSort Sort
+    | UpdatedSearchTerm String
     | NoOp
 
 
-update : Request -> Msg -> Model -> ( Model, Effect Msg )
-update req msg model =
+update : Msg -> Model -> ( Model, Effect Msg )
+update msg model =
     case msg of
         ClickedChangeSort sort ->
-            ( model, Effect.fromShared <| Shared.ChangeSort sort )
+            ( model, Effect.fromShared <| Shared.ChangedSort sort )
+
+        UpdatedSearchTerm term ->
+            ( { model | searchTerm = term }, Effect.none )
 
         NoOp ->
             ( model, Effect.none )
@@ -73,13 +79,23 @@ view : Shared.Model -> Model -> View Msg
 view shared model =
     let
         sites =
-            shared.sites |> Dict.values |> Site.sort shared.sort
+            shared.sites
+                |> Dict.values
+                |> Site.sort shared.sort
+                |> List.filter (\site -> site.url |> String.contains model.searchTerm)
     in
     { title = ""
     , body =
         [ layout [ width fill, paddingXY 50 20 ] <|
             column [ width fill, spacing 50 ]
                 [ Styled.textWith [ centerX ] "A list of sites with Core Web Vitals scores."
+                , Input.text
+                    Styles.inputStyle
+                    { onChange = UpdatedSearchTerm
+                    , placeholder = Just <| Input.placeholder [] <| Element.text "Search"
+                    , text = model.searchTerm
+                    , label = Input.labelHidden ""
+                    }
                 , siteScoresTable sites
                 ]
         ]

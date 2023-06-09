@@ -1,13 +1,25 @@
 module Backend exposing (..)
 
-import Api.Site exposing (Score(..), ScoreDevice(..))
+import Api.Data
+import Api.Site exposing (Platform(..), Score(..))
+import Api.User
 import Bridge exposing (..)
+import Crypto.Hash
 import Dict
 import Env
+import Gen.Msg
 import Http
 import Json.Auto.SpeedrunResult
 import Lamdera exposing (..)
+import Pages.Login
+import Pages.Register
+import Random
+import Random.Char
+import Random.String
 import Set
+import Task
+import Time as Time
+import Time.Extra as Time
 import Types exposing (..)
 
 
@@ -20,18 +32,19 @@ app =
         { init = init
         , update = update
         , updateFromFrontend = updateFromFrontend
-        , subscriptions = subscriptions
+        , subscriptions = \_ -> onConnect OnConnect
         }
 
 
 subscriptions : Model -> Sub BackendMsg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 
 init : ( Model, Cmd BackendMsg )
 init =
-    ( { message = "stub"
+    ( { users = Dict.empty
+      , sessions = Dict.empty
       , sites = Dict.empty
       , categories = Set.empty
       , frontendLangs = Set.empty
@@ -43,6 +56,42 @@ init =
 update : BackendMsg -> Model -> ( Model, Cmd BackendMsg )
 update msg model =
     case msg of
+        OnConnect sessionId clientId ->
+            ( model, Time.now |> Task.perform (VerifySession sessionId clientId) )
+
+        AuthenticateSession sessionId clientId user now ->
+            ( { model
+                | sessions =
+                    model.sessions
+                        |> Dict.insert sessionId
+                            { user = user.email
+                            , expires = now |> Time.add Time.Hour 24 Time.utc
+                            }
+              }
+            , sendToFrontend clientId <| SignInUser <| user
+            )
+
+        VerifySession sessionId clientId now ->
+            let
+                maybeUser =
+                    model.sessions
+                        |> Dict.get sessionId
+                        |> Maybe.andThen
+                            (\session ->
+                                if session.expires |> sessionExpired now then
+                                    Nothing
+
+                                else
+                                    model.users |> Dict.get session.user
+                            )
+            in
+            case maybeUser of
+                Nothing ->
+                    ( model, sendToFrontend clientId <| SignOutUser )
+
+                Just user ->
+                    ( model, sendToFrontend clientId <| SignInUser <| Api.User.toUser user )
+
         GotSiteStats clientId siteUrl device result ->
             let
                 maybeSite =
@@ -117,6 +166,27 @@ update msg model =
             , sendToFrontend clientId <| SendSites newModel.sites
             )
 
+        RegisterUser sessionId clientId user salt ->
+            let
+                newUser =
+                    { username = user.username
+                    , email = user.email
+                    , isAdmin = Api.User.adminUsers |> List.member user.email
+                    , passwordHash = hashPassword user.password salt
+                    , salt = salt
+                    }
+            in
+            ( { model | users = model.users |> Dict.insert user.email newUser }
+            , Cmd.batch
+                [ sendToPage clientId <|
+                    Gen.Msg.Register <|
+                        Pages.Register.GotUser <|
+                            Api.Data.Success <|
+                                Api.User.toUser newUser
+                , Time.now |> Task.perform (AuthenticateSession sessionId clientId <| Api.User.toUser newUser)
+                ]
+            )
+
         NoOpBackendMsg ->
             ( model, Cmd.none )
 
@@ -126,6 +196,9 @@ updateFromFrontend sessionId clientId msg model =
     case msg of
         NoOpToBackend ->
             ( model, Cmd.none )
+
+        AttemptSignOut ->
+            ( { model | sessions = model.sessions |> Dict.remove sessionId }, sendToFrontend clientId <| SignOutUser )
 
         FetchSites ->
             ( model, sendToFrontend clientId <| SendSites model.sites )
@@ -161,7 +234,11 @@ updateFromFrontend sessionId clientId msg model =
         AddCategory category ->
             let
                 newModel =
-                    { model | categories = model.categories |> Set.insert category }
+                    if isAdminSession model sessionId then
+                        { model | categories = model.categories |> Set.insert category }
+
+                    else
+                        model
             in
             ( newModel
             , sendToFrontend clientId <| SendCategories <| Set.toList <| newModel.categories
@@ -170,7 +247,11 @@ updateFromFrontend sessionId clientId msg model =
         AddFrontendLang frontendLang ->
             let
                 newModel =
-                    { model | frontendLangs = model.frontendLangs |> Set.insert frontendLang }
+                    if isAdminSession model sessionId then
+                        { model | frontendLangs = model.frontendLangs |> Set.insert frontendLang }
+
+                    else
+                        model
             in
             ( newModel
             , sendToFrontend clientId <| SendFrontendLangs <| Set.toList <| newModel.frontendLangs
@@ -179,7 +260,11 @@ updateFromFrontend sessionId clientId msg model =
         DeleteSite siteUrl ->
             let
                 newModel =
-                    { model | sites = model.sites |> Dict.remove siteUrl }
+                    if isAdminSession model sessionId then
+                        { model | sites = model.sites |> Dict.remove siteUrl }
+
+                    else
+                        model
             in
             ( newModel
             , sendToFrontend clientId <| SendSites newModel.sites
@@ -188,7 +273,11 @@ updateFromFrontend sessionId clientId msg model =
         DeleteCategory category ->
             let
                 newModel =
-                    { model | categories = model.categories |> Set.remove category }
+                    if isAdminSession model sessionId then
+                        { model | categories = model.categories |> Set.remove category }
+
+                    else
+                        model
             in
             ( newModel
             , sendToFrontend clientId <| SendCategories <| Set.toList <| newModel.categories
@@ -197,11 +286,137 @@ updateFromFrontend sessionId clientId msg model =
         DeleteFrontendLang frontendLang ->
             let
                 newModel =
-                    { model | frontendLangs = model.frontendLangs |> Set.remove frontendLang }
+                    if isAdminSession model sessionId then
+                        { model | frontendLangs = model.frontendLangs |> Set.remove frontendLang }
+
+                    else
+                        model
             in
             ( newModel
             , sendToFrontend clientId <| SendFrontendLangs <| Set.toList <| newModel.frontendLangs
             )
+
+        AttemptSignIn user ->
+            case model.users |> Dict.get user.email of
+                Just existingUser ->
+                    let
+                        passwordHash =
+                            hashPassword user.password existingUser.salt
+                    in
+                    if passwordHash == existingUser.passwordHash then
+                        ( model
+                        , Cmd.batch
+                            [ sendToPage clientId <|
+                                Gen.Msg.Login <|
+                                    Pages.Login.GotUser <|
+                                        Api.Data.Success <|
+                                            Api.User.toUser existingUser
+                            , Time.now |> Task.perform (AuthenticateSession sessionId clientId <| Api.User.toUser existingUser)
+                            ]
+                        )
+
+                    else
+                        ( model
+                        , sendToPage clientId <|
+                            Gen.Msg.Login <|
+                                Pages.Login.GotUser <|
+                                    Api.Data.Failure "Incorrect email or password."
+                        )
+
+                Nothing ->
+                    ( model
+                    , sendToPage clientId <|
+                        Gen.Msg.Login <|
+                            Pages.Login.GotUser <|
+                                Api.Data.Failure "Incorrect email or password."
+                    )
+
+        AttemptRegistration user ->
+            let
+                ( validUsername, validEmail, validPass ) =
+                    Api.User.validateUser user
+            in
+            case ( validUsername, validEmail, validPass ) of
+                ( True, True, True ) ->
+                    case model.users |> Dict.get user.email of
+                        Just _ ->
+                            ( model
+                            , sendToPage clientId <|
+                                Gen.Msg.Register <|
+                                    Pages.Register.GotUser <|
+                                        Api.Data.Failure "This email address is already taken"
+                            )
+
+                        Nothing ->
+                            ( model
+                            , Random.generate (RegisterUser sessionId clientId user) randomSalt
+                            )
+
+                ( False, _, _ ) ->
+                    ( model
+                    , sendToPage clientId <|
+                        Gen.Msg.Register <|
+                            Pages.Register.GotUser <|
+                                Api.Data.Failure "Please enter a valid username"
+                    )
+
+                ( _, False, _ ) ->
+                    ( model
+                    , sendToPage clientId <|
+                        Gen.Msg.Register <|
+                            Pages.Register.GotUser <|
+                                Api.Data.Failure "Please enter a valid email address"
+                    )
+
+                ( _, _, False ) ->
+                    ( model
+                    , sendToPage clientId <|
+                        Gen.Msg.Register <|
+                            Pages.Register.GotUser <|
+                                Api.Data.Failure "Please enter a valid password"
+                    )
+
+
+
+-- CRYPTO
+
+
+randomSalt : Random.Generator String
+randomSalt =
+    Random.String.string 10 Random.Char.english
+
+
+hashPassword password salt =
+    Crypto.Hash.sha256 <| password ++ salt
+
+
+
+-- HELPERS
+
+
+isAdminSession : Model -> SessionId -> Bool
+isAdminSession model sessionId =
+    let
+        maybeUser =
+            model.sessions
+                |> Dict.get sessionId
+                |> Maybe.map .user
+                |> Maybe.andThen (\user -> model.users |> Dict.get user)
+    in
+    case maybeUser of
+        Nothing ->
+            False
+
+        Just user ->
+            user.isAdmin
+
+
+sendToPage clientId page =
+    sendToFrontend clientId <| PageMsg <| page
+
+
+
+-- REQUEST
 
 
 proxy : String
@@ -247,3 +462,8 @@ requestSiteStats clientId siteUrl =
         [ mobileCmd
         , desktopCmd
         ]
+
+
+sessionExpired : Time.Posix -> Time.Posix -> Bool
+sessionExpired now expiration =
+    Time.posixToMillis now >= Time.posixToMillis expiration

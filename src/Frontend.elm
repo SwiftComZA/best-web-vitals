@@ -136,6 +136,12 @@ updateFromBackend msg model =
         PageMsg pageMsg ->
             update (Page pageMsg) model
 
+        SignInUser user ->
+            update (Shared <| Shared.SignedInUser user) model
+
+        SignOutUser ->
+            update (Shared <| Shared.SignedOutUser) model
+
         SendSites siteList ->
             update (Shared <| Shared.GotSites siteList) model
 

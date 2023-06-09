@@ -28,7 +28,7 @@ type alias ScoreValue =
     }
 
 
-type ScoreDevice
+type Platform
     = Mobile
     | Desktop
 

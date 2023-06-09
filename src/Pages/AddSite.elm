@@ -3,11 +3,9 @@ module Pages.AddSite exposing (Model, Msg, page)
 import Api.Site
 import Bridge exposing (..)
 import Effect exposing (Effect)
-import Element exposing (centerX, fill, paddingXY, spacing, width)
+import Element exposing (centerX, fill, paddingXY, px, spacing, width)
 import Element.Input as Input
 import Gen.Params.AddSite exposing (Params)
-import Html.Events
-import Json.Decode as Decode
 import Page
 import Request
 import Shared
@@ -17,7 +15,7 @@ import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
-page shared req =
+page shared _ =
     Page.advanced
         { init = init
         , update = update
@@ -111,29 +109,12 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 
 
 -- VIEW
-
-
-onEnter : msg -> Element.Attribute msg
-onEnter msg =
-    Element.htmlAttribute
-        (Html.Events.on "keyup"
-            (Decode.field "key" Decode.string
-                |> Decode.andThen
-                    (\key ->
-                        if key == "Enter" then
-                            Decode.succeed msg
-
-                        else
-                            Decode.fail "Not the enter key"
-                    )
-            )
-        )
 
 
 view : Shared.Model -> Model -> View Msg
@@ -142,7 +123,7 @@ view shared model =
     , body =
         [ Element.layout [ width fill, paddingXY 50 100 ] <|
             Element.column [ centerX ]
-                [ Element.column [ spacing 20 ]
+                [ Element.column [ spacing 20, width <| px 400 ]
                     [ Input.text
                         Styles.inputStyle
                         { onChange = Updated Site

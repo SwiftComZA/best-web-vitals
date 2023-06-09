@@ -6,7 +6,7 @@ import Element.Input as Input
 import Html
 import Html.Attributes
 import Html.Events
-import UI.Styles
+import UI.Styles as Styles
 
 
 
@@ -30,7 +30,7 @@ submitButtonWith styles { label, onPress, disabled } =
     if disabled then
         Input.button
             (styles
-                ++ [ Font.color UI.Styles.color.lightGrey
+                ++ [ Font.color Styles.color.lightGrey
                    , Element.mouseOver []
                    , Element.htmlAttribute <| Html.Attributes.style "cursor" "default"
                    ]
@@ -52,9 +52,8 @@ dropdown args =
 
 dropdownWith styles { label, onChange } options =
     Element.el
-        ([ Element.width <| Element.fill
-         ]
-            ++ styles
+        ((Element.width <| Element.fill)
+            :: styles
         )
     <|
         Element.html <|
@@ -77,3 +76,22 @@ dropdownWith styles { label, onChange } options =
                                 )
                        )
                 )
+
+
+message : Maybe ( String, Bool ) -> Element.Element msg
+message maybeMessage =
+    case maybeMessage of
+        Just ( content, isError ) ->
+            textWith
+                [ Element.centerX
+                , Font.color <|
+                    if isError then
+                        Styles.color.red
+
+                    else
+                        Styles.color.green
+                ]
+                content
+
+        Nothing ->
+            Element.none

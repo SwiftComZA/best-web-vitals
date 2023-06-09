@@ -4,29 +4,7 @@ import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..))
 import Bridge exposing (..)
 import Dict
 import Effect exposing (Effect)
-import Element
-    exposing
-        ( centerX
-        , column
-        , el
-        , fill
-        , fillPortion
-        , layout
-        , mouseOver
-        , padding
-        , paddingEach
-        , paddingXY
-        , pointer
-        , px
-        , rgb
-        , rgba
-        , row
-        , shrink
-        , spacing
-        , table
-        , text
-        , width
-        )
+import Element exposing (centerX, column, el, fill, fillPortion, layout, mouseOver, padding, paddingEach, paddingXY, pointer, px, rgb, rgba, row, shrink, spacing, table, text, width)
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
@@ -37,14 +15,17 @@ import Shared
 import String exposing (fromInt)
 import UI.Styled as Styled
 import UI.Styles as Styles exposing (noPadding)
+import Utils.If exposing (viewIfElse)
+import Utils.Maybe exposing (boolToBool)
+import Utils.Misc exposing (onEnter)
 import View exposing (View)
 
 
 page : Shared.Model -> Request -> Page.With Model Msg
-page shared req =
+page shared _ =
     Page.advanced
         { init = init shared
-        , update = update req
+        , update = update
         , subscriptions = subscriptions
         , view = view shared
         }
@@ -61,10 +42,8 @@ type alias Model =
 
 
 init : Shared.Model -> ( Model, Effect Msg )
-init shared =
-    ( { category = ""
-      , frontendLang = ""
-      }
+init _ =
+    ( Model "" ""
     , Effect.batch
         [ Effect.fromCmd <| sendToBackend <| FetchCategories
         , Effect.fromCmd <| sendToBackend <| FetchFrontendLangs
@@ -81,7 +60,7 @@ type Msg
     | ClickedDelete Field String
     | ClickedChangeSort Sort
     | Updated Field String
-    | CLickedSubmit Field
+    | ClickedSubmit Field
 
 
 type Field
@@ -89,11 +68,11 @@ type Field
     | FrontendLang
 
 
-update : Request -> Msg -> Model -> ( Model, Effect Msg )
-update req msg model =
+update : Msg -> Model -> ( Model, Effect Msg )
+update msg model =
     case msg of
         ClickedChangeSort sort ->
-            ( model, Effect.fromShared <| Shared.ChangeSort sort )
+            ( model, Effect.fromShared <| Shared.ChangedSort sort )
 
         Updated Category category ->
             ( { model | category = category }, Effect.none )
@@ -101,11 +80,11 @@ update req msg model =
         Updated FrontendLang frontendLang ->
             ( { model | frontendLang = frontendLang }, Effect.none )
 
-        CLickedSubmit Category ->
-            ( model, Effect.fromCmd <| sendToBackend <| AddCategory model.category )
+        ClickedSubmit Category ->
+            ( { model | category = "" }, Effect.fromCmd <| sendToBackend <| AddCategory model.category )
 
-        CLickedSubmit FrontendLang ->
-            ( model, Effect.fromCmd <| sendToBackend <| AddFrontendLang model.frontendLang )
+        ClickedSubmit FrontendLang ->
+            ( { model | frontendLang = "" }, Effect.fromCmd <| sendToBackend <| AddFrontendLang model.frontendLang )
 
         ClickedDeleteSite siteUrl ->
             ( model, Effect.fromCmd <| sendToBackend <| DeleteSite siteUrl )
@@ -135,14 +114,17 @@ view shared model =
     { title = ""
     , body =
         [ layout [ width fill, paddingXY 50 20 ] <|
-            column [ width fill, spacing 50 ]
-                [ Styled.textWith [ centerX ] "Websites"
-                , siteScoresTable sites
-                , Styled.textWith [ centerX ] "Categories"
-                , categoriesTable model shared.categories
-                , Styled.textWith [ centerX ] "Frontend Languages"
-                , frontendLangsTable model shared.frontendLangs
-                ]
+            viewIfElse (shared.user |> Maybe.map (\user -> user.isAdmin) |> boolToBool)
+                (column [ width fill, spacing 50 ]
+                    [ Styled.textWith [ centerX ] "Websites"
+                    , siteScoresTable sites
+                    , Styled.textWith [ centerX ] "Categories"
+                    , categoriesTable model shared.categories
+                    , Styled.textWith [ centerX ] "Frontend Languages"
+                    , frontendLangsTable model shared.frontendLangs
+                    ]
+                )
+                (text "You are not authorized to view this page.")
         ]
     }
 
@@ -347,7 +329,7 @@ categoryRow model func row =
         Input ->
             tableCell [] <|
                 Element.row [ width fill, spacing 50 ]
-                    [ Input.text Styles.inputStyle
+                    [ Input.text (Styles.inputStyle ++ [ onEnter (ClickedSubmit Category) ])
                         { onChange = Updated Category
                         , placeholder = Just <| Input.placeholder [] <| Element.text "Category"
                         , text = model.category
@@ -355,7 +337,7 @@ categoryRow model func row =
                         }
                     , Styled.submitButtonWith []
                         { label = Element.text "Add"
-                        , onPress = Just (CLickedSubmit Category)
+                        , onPress = Just (ClickedSubmit Category)
                         , disabled = False
                         }
                     ]
@@ -370,7 +352,7 @@ frontendLangRow model func row =
         Input ->
             tableCell [] <|
                 Element.row [ width fill, spacing 50 ]
-                    [ Input.text Styles.inputStyle
+                    [ Input.text (Styles.inputStyle ++ [ onEnter (ClickedSubmit FrontendLang) ])
                         { onChange = Updated FrontendLang
                         , placeholder = Just <| Input.placeholder [] <| Element.text "Language"
                         , text = model.frontendLang
@@ -378,7 +360,7 @@ frontendLangRow model func row =
                         }
                     , Styled.submitButtonWith []
                         { label = Element.text "Add"
-                        , onPress = Just (CLickedSubmit FrontendLang)
+                        , onPress = Just (ClickedSubmit FrontendLang)
                         , disabled = False
                         }
                     ]
