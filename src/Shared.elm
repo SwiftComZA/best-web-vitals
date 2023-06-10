@@ -187,9 +187,7 @@ navbar userIsSignedIn userIsAdmin toMsg =
                         ]
 
                     else
-                        [ navbarLinkItem [ alignRight ] { url = "/login", label = "Login" }
-                        , navbarLinkItem [ alignRight ] { url = "/register", label = "Register" }
-                        ]
+                        []
                    )
             )
 
