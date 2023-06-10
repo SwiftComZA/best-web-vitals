@@ -1,9 +1,10 @@
 module Pages.Home_ exposing (Model, Msg(..), page)
 
-import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..))
+import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..), extractDomain)
 import Dict
 import Effect exposing (Effect)
-import Element exposing (centerX, column, el, fill, fillPortion, layout, padding, paddingEach, paddingXY, pointer, px, rgba, row, spacing, table, text, width)
+import Element exposing (centerX, column, el, fill, fillPortion, layout, link, padding, paddingEach, paddingXY, pointer, px, rgb, rgba, row, shrink, spacing, table, text, width)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
@@ -109,7 +110,7 @@ siteScoresTable siteList =
         , columns =
             [ { header = tableCell [ Font.bold, pointer, onClick <| ClickedChangeSort Domain ] <| text "Domain"
               , width = fillPortion 1
-              , view = \site -> tableCell [] <| text site.url
+              , view = \site -> tableCell [] <| link [] { url = site.url, label = text <| extractDomain site.url }
               }
             , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ClickedChangeSort Category ] <| text "Category"
               , width = fillPortion 1
@@ -142,18 +143,18 @@ tableScoreColumns =
             \site ->
                 case site.mobileScore of
                     Pending ->
-                        tableCell [ Font.center ] <| text "Pending"
+                        tableCell [] <| shadowEl [ Font.center, width fill, scoreColor <| -1 ] <| text "Pending"
 
                     Failed ->
-                        tableCell [ Font.center ] <| text "Failed"
+                        tableCell [] <| shadowEl [ Font.center, width fill, scoreColor <| 0 ] <| text "Failed"
 
                     Success score ->
                         tableCell [] <|
                             row [ width fill ]
-                                [ el [ width fill, Font.center ] <| text <| fromInt <| round <| score.performance * 100
-                                , el [ width fill, Font.center ] <| text <| fromInt <| round <| score.accessibility * 100
-                                , el [ width fill, Font.center ] <| text <| fromInt <| round <| score.bestPractices * 100
-                                , el [ width fill, Font.center ] <| text <| fromInt <| round <| score.seo * 100
+                                [ shadowEl [ width fill, Font.center, scoreColor <| score.performance * 100 ] <| text <| fromInt <| round <| score.performance * 100
+                                , shadowEl [ width fill, Font.center, scoreColor <| score.accessibility * 100 ] <| text <| fromInt <| round <| score.accessibility * 100
+                                , shadowEl [ width fill, Font.center, scoreColor <| score.bestPractices * 100 ] <| text <| fromInt <| round <| score.bestPractices * 100
+                                , shadowEl [ width fill, Font.center, scoreColor <| score.seo * 100 ] <| text <| fromInt <| round <| score.seo * 100
                                 ]
       }
     , { header =
@@ -172,18 +173,18 @@ tableScoreColumns =
             \site ->
                 case site.desktopScore of
                     Pending ->
-                        tableCell [ Font.center ] <| text "Pending"
+                        tableCell [] <| shadowEl [ Font.center, width fill, scoreColor <| -1 ] <| text "Pending"
 
                     Failed ->
-                        tableCell [ Font.center ] <| text "Failed"
+                        tableCell [] <| shadowEl [ Font.center, width fill, scoreColor <| 0 ] <| text "Failed"
 
                     Success score ->
                         tableCell [] <|
                             row [ width fill ]
-                                [ el [ width fill, Font.center ] <| text <| fromInt <| round <| score.performance * 100
-                                , el [ width fill, Font.center ] <| text <| fromInt <| round <| score.accessibility * 100
-                                , el [ width fill, Font.center ] <| text <| fromInt <| round <| score.bestPractices * 100
-                                , el [ width fill, Font.center ] <| text <| fromInt <| round <| score.seo * 100
+                                [ shadowEl [ width fill, Font.center, scoreColor <| score.performance * 100 ] <| text <| fromInt <| round <| score.performance * 100
+                                , shadowEl [ width fill, Font.center, scoreColor <| score.accessibility * 100 ] <| text <| fromInt <| round <| score.accessibility * 100
+                                , shadowEl [ width fill, Font.center, scoreColor <| score.bestPractices * 100 ] <| text <| fromInt <| round <| score.bestPractices * 100
+                                , shadowEl [ width fill, Font.center, scoreColor <| score.seo * 100 ] <| text <| fromInt <| round <| score.seo * 100
                                 ]
       }
     ]
@@ -192,3 +193,30 @@ tableScoreColumns =
 tableCell : List (Element.Attribute Msg) -> Element.Element Msg -> Element.Element Msg
 tableCell atts content =
     el (atts ++ [ padding 10 ]) <| content
+
+
+scoreColor : Float -> Element.Attribute msg
+scoreColor score =
+    Background.color <|
+        if score >= 75 then
+            rgb 0 1 0
+
+        else if score >= 50 then
+            rgb 1 1 0
+
+        else if score >= 25 then
+            rgb 1 0.5 0
+
+        else if score >= 0 then
+            rgb 1 0.3 0.3
+
+        else
+            rgb 0.5 0.8 1
+
+
+shadowEl styles =
+    el
+        ([ Border.innerShadow { offset = ( 0, 0 ), size = 0, blur = 10, color = Element.rgba 0 0 0 0.5 }
+         ]
+            ++ styles
+        )

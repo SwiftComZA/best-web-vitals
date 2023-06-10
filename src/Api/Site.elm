@@ -85,7 +85,7 @@ sortingFunction : Sort -> Site -> ( String, Float )
 sortingFunction sorting =
     case sorting of
         Domain ->
-            \site -> ( site.url, 0.0 )
+            \site -> ( site.url |> extractDomain, 0.0 )
 
         Category ->
             \site -> ( site.category, 0.0 )
@@ -168,3 +168,23 @@ sortingFunction sorting =
 
                             _ ->
                                 ( "", 0.0 )
+
+
+extractDomain url =
+    case url |> String.split "www." of
+        [ "https://", domain ] ->
+            domain
+
+        [ "http://", domain ] ->
+            domain
+
+        _ ->
+            case url |> String.split "://" of
+                [ "https", domain ] ->
+                    domain
+
+                [ "http", domain ] ->
+                    domain
+
+                _ ->
+                    url
