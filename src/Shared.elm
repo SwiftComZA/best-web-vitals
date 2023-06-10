@@ -84,7 +84,7 @@ update _ msg model =
                         else
                             ( sort, Asc )
 
-                    else if sort == Domain then
+                    else if sort == Domain || sort == Category || sort == FrontendLang then
                         ( sort, Asc )
 
                     else

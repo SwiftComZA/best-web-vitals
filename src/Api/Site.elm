@@ -1,5 +1,7 @@
 module Api.Site exposing (..)
 
+-- TODO: Use Url.Url library for Url
+
 
 type alias Site =
     { url : Url
@@ -39,6 +41,10 @@ type alias Category =
 
 type alias FrontendLang =
     String
+
+
+
+-- SORTING
 
 
 type Sort
@@ -82,10 +88,10 @@ sortingFunction sorting =
             \site -> ( site.url, 0.0 )
 
         Category ->
-            \site -> ( site.url, 0.0 )
+            \site -> ( site.category, 0.0 )
 
         FrontendLang ->
-            \site -> ( site.url, 0.0 )
+            \site -> ( site.frontendLang, 0.0 )
 
         MobileScore type_ ->
             case type_ of
