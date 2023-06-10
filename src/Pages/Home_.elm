@@ -3,7 +3,7 @@ module Pages.Home_ exposing (Model, Msg(..), page)
 import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..), extractDomain)
 import Dict
 import Effect exposing (Effect)
-import Element exposing (centerX, column, el, fill, fillPortion, layout, link, padding, paddingEach, paddingXY, pointer, px, rgb, rgba, row, shrink, spacing, table, text, width)
+import Element exposing (centerX, column, el, fill, fillPortion, layout, link, newTabLink, padding, paddingEach, paddingXY, pointer, px, rgb, rgba, row, shrink, spacing, table, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -110,7 +110,7 @@ siteScoresTable siteList =
         , columns =
             [ { header = tableCell [ Font.bold, pointer, onClick <| ClickedChangeSort Domain ] <| text "Domain"
               , width = fillPortion 1
-              , view = \site -> tableCell [] <| link [] { url = site.url, label = text <| extractDomain site.url }
+              , view = \site -> tableCell [] <| newTabLink [] { url = "https://pagespeed.web.dev/analysis?url=" ++ site.url, label = text <| extractDomain site.url }
               }
             , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ClickedChangeSort Category ] <| text "Category"
               , width = fillPortion 1
