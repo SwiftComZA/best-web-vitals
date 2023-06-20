@@ -5,6 +5,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Html.Attributes exposing (style)
+import String exposing (fromInt)
 
 
 color =
@@ -18,6 +19,16 @@ color =
     }
 
 
+pageStyles =
+    [ Html.Attributes.class "page"
+    , style "min-height"
+        ("calc(100vh - "
+            ++ fromInt (navbarHeight + footerHeight)
+            ++ "px)"
+        )
+    ]
+
+
 noPadding =
     { top = 0
     , bottom = 0
@@ -26,9 +37,17 @@ noPadding =
     }
 
 
+borderShadow =
+    Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }
+
+
+innerBorderShadow =
+    Border.innerShadow { offset = ( 0, 0 ), size = 0, blur = 10, color = Element.rgba 0 0 0 0.5 }
+
+
 buttonStyle =
     [ padding 10
-    , Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }
+    , borderShadow
     , width fill
     , Font.center
     , mouseOver
@@ -39,7 +58,7 @@ buttonStyle =
 
 
 inputStyle =
-    [ Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }
+    [ borderShadow
     , Border.width 0
     , Border.rounded 0
     , focused []
@@ -47,14 +66,12 @@ inputStyle =
 
 
 dropdownStyle =
-    [ Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = Element.rgba 0 0 0 0.15 }
+    [ borderShadow
     ]
 
 
 footerStyle =
-    [ style "height" "50px"
-
-    -- , style "position" "sticky"
+    [ style "height" (fromInt footerHeight ++ "px")
     , style "width" "100%"
     , style "bottom" "0"
     , style "box-shadow" "0px 0px 20px 0px rgba(0,0,0,0.15)"
@@ -66,3 +83,11 @@ footerStyle =
     , style "box-sizing" "border-box"
     , style "background" "white"
     ]
+
+
+navbarHeight =
+    75
+
+
+footerHeight =
+    50

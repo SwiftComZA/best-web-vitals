@@ -1,22 +1,31 @@
-module Shared exposing (Flags, Model, Msg(..), init, subscriptions, update, view)
+port module Shared exposing (Flags, Model, Msg(..), init, subscriptions, update, view)
 
 import Api.Site exposing (Category, Direction(..), FrontendLang, ScoreType(..), Site, Sort(..))
 import Api.User exposing (User)
 import Bridge exposing (ToBackend(..), sendToBackend)
+import Browser.Dom exposing (Viewport, getViewport)
 import Dict exposing (Dict)
-import Element exposing (alignLeft, alignRight, centerX, centerY, el, fill, height, htmlAttribute, layout, link, mouseOver, paddingEach, pointer, px, rgb255, rgba, row, width)
+import Element exposing (alignLeft, alignRight, centerX, centerY, column, el, fill, height, html, htmlAttribute, layout, link, maximum, mouseOver, padding, pointer, px, rgb, rgba, row, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
 import Html exposing (..)
-import Html.Attributes exposing (class, href, id, rel, src, style, type_)
+import Html.Attributes exposing (class, href, src, style)
+import Html.Events
 import Request exposing (Request)
+import Task
 import UI.Styled as Styled
-import UI.Styles exposing (footerStyle, noPadding)
+import UI.Styles as Styles exposing (borderShadow, footerStyle, pageStyles)
+import Utils.Element.Extra as Element exposing (..)
 import Utils.If exposing (viewIf)
+import Utils.List as List
 import Utils.Maybe as Maybe
+import Utils.String as String
 import View exposing (View)
+
+
+port resize : (() -> msg) -> Sub msg
 
 
 
@@ -33,18 +42,22 @@ type alias Model =
     , sort : ( Sort, Direction )
     , categories : List Category
     , frontendLangs : List FrontendLang
+    , viewportWidth : Float
+    , menuOpen : Bool
     }
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
 init _ _ =
-    ( Model
-        Nothing
-        Dict.empty
-        ( MobileScore Perf, Desc )
-        []
-        []
-    , Cmd.none
+    ( { user = Nothing
+      , sites = Dict.empty
+      , sort = ( MobileScore Perf, Desc )
+      , categories = []
+      , frontendLangs = []
+      , viewportWidth = 0
+      , menuOpen = False
+      }
+    , Task.perform GotViewport getViewport
     )
 
 
@@ -60,16 +73,26 @@ type Msg
     | GotCategories (List Category)
     | GotFrontendLangs (List FrontendLang)
     | ClickedSignOut
+    | GotViewport Viewport
+    | ResizedViewport ()
+    | ClickedMenu
+    | CloseMenu
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update _ msg model =
     case msg of
+        ResizedViewport _ ->
+            ( model, Task.perform GotViewport getViewport )
+
+        GotViewport viewport ->
+            ( { model | viewportWidth = viewport.viewport.width }, Cmd.none )
+
         SignedInUser user ->
             ( { model | user = Just user }, Cmd.none )
 
         SignedOutUser ->
-            ( { model | user = Nothing }, Cmd.none )
+            ( { model | user = Nothing, menuOpen = False }, Cmd.none )
 
         ChangedSort sort ->
             let
@@ -106,10 +129,16 @@ update _ msg model =
         ClickedSignOut ->
             ( { model | user = Nothing }, sendToBackend <| AttemptSignOut )
 
+        ClickedMenu ->
+            ( { model | menuOpen = not model.menuOpen }, Cmd.none )
+
+        CloseMenu ->
+            ( { model | menuOpen = False }, Cmd.none )
+
 
 subscriptions : Request -> Model -> Sub Msg
 subscriptions _ _ =
-    Sub.none
+    Sub.batch [ resize ResizedViewport ]
 
 
 
@@ -125,30 +154,25 @@ view _ { page, toMsg } model =
     { title =
         page.title
     , body =
-        css
-            ++ [ div [ class "layout" ]
-                    [ navbar (Maybe.toBool <| model.user)
-                        (model.user
-                            |> Maybe.map (\u -> u.isAdmin)
-                            |> Maybe.boolToBool
-                        )
-                        toMsg
-                    , div [ class "page", style "min-height" "calc(100vh - 225px)", style "padding-bottom" "100px" ] page.body
-                    , div footerStyle
-                        [ div []
-                            [ Html.text "Contact: "
-                            , a
-                                [ href "mailto:hello@swiftcom.app"
-                                , style "text-decoration" "none"
-                                ]
-                                [ text "SwiftCom" ]
-                            ]
-                        , div [] [ Html.text "Built with ♥ and Elm" ]
-                        ]
+        [ div [ class "layout" ]
+            [ navbarContainer
+                [ (if model.viewportWidth > 768 then
+                    navbarDesktop
 
-                    -- , footer
-                    ]
-               ]
+                   else
+                    navbarMobile model.menuOpen
+                  )
+                    (Maybe.toBool <| model.user)
+                    (model.user
+                        |> Maybe.map (\u -> u.isAdmin)
+                        |> Maybe.boolToBool
+                    )
+                    toMsg
+                ]
+            , div pageStyles page.body
+            , footer model.viewportWidth
+            ]
+        ]
     }
 
 
@@ -156,46 +180,113 @@ view _ { page, toMsg } model =
 -- NAVBAR
 
 
-navbar : Bool -> Bool -> (Msg -> msg) -> Html msg
-navbar userIsSignedIn userIsAdmin toMsg =
+navbarContainer =
+    div
+        [ style "position" "sticky"
+        , style "top" "0"
+        , style "z-index" "1"
+        ]
+
+
+navbarMobile menuOpen userIsSignedIn userIsAdmin toMsg =
+    layout [ width fill ] <|
+        column
+            ([ width fill
+             , position relative
+             , Background.color Styles.color.white
+             ]
+                |> List.withIf
+                    (not menuOpen)
+                    [ borderShadow ]
+            )
+            [ el [ alignRight, centerY, padding 24 ] <| burgerMenu menuOpen toMsg
+            , column
+                [ height <|
+                    maximum
+                        (if menuOpen then
+                            240
+
+                         else
+                            0
+                        )
+                        fill
+                , position absolute
+                , overflow hidden
+                , top 75
+                , htmlAttribute <| style "transition" "max-height 0.1s ease-out"
+                , width fill
+                , Border.shadow { offset = ( 0, 20 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }
+                , Background.color <| Styles.color.white
+                , Border.solid
+                , Border.color Styles.color.lightGrey
+                , Border.width 1
+                ]
+                [ navbarMobileLinkItem { url = "/", label = "Home" }
+                , navbarMobileLinkItem { url = "/add-site", label = "Add Site" }
+                , navbarMobileLinkItem { url = "/admin", label = "Admin" } |> viewIf userIsAdmin
+                , el
+                    [ onClick <| toMsg ClickedSignOut
+                    , padding 20
+                    ]
+                    (Styled.textWith [ centerY, centerX ] "Sign Out")
+                    |> viewIf userIsSignedIn
+                ]
+            ]
+
+
+burgerMenu open toMsg =
+    html <|
+        div
+            [ class ("burger-menu-container" |> String.withIf open " open")
+            , Html.Events.onClick <| toMsg ClickedMenu
+            ]
+            [ img
+                [ src "/vectors/bar.svg"
+                , class ("burger-menu-bar top" |> String.withIf open " open")
+                ]
+                []
+            , img
+                [ src "/vectors/bar.svg"
+                , class ("burger-menu-bar middle" |> String.withIf open " open")
+                ]
+                []
+            , img
+                [ src "/vectors/bar.svg"
+                , class ("burger-menu-bar bottom" |> String.withIf open " open")
+                ]
+                []
+            ]
+
+
+navbarDesktop : Bool -> Bool -> (Msg -> msg) -> Html msg
+navbarDesktop userIsSignedIn userIsAdmin toMsg =
     layout [ width fill ] <|
         row
             [ width fill
-            , height <| px 75
-            , Border.shadow
-                { offset = ( 0, 0 )
-                , size = 0
-                , blur = 20
-                , color = rgba 0 0 0 0.15
-                }
+            , height <| px Styles.navbarHeight
+            , Styles.borderShadow
+            , Background.color <| rgb 1 1 1
             ]
-            ([ navbarLinkItem [ alignLeft ] { url = "/", label = "Home" }
-             , navbarLinkItem [ alignLeft ] { url = "/admin", label = "Admin" } |> viewIf userIsAdmin
-             , navbarLinkItem [ alignLeft ] { url = "/add-site", label = "Add Site" }
-             ]
-                ++ (if userIsSignedIn then
-                        [ el
-                            [ width <| px 100
-                            , alignRight
-                            , height fill
-                            , mouseOver [ Background.color <| rgb255 173 216 230 ]
-                            , pointer
-                            , onClick <| toMsg ClickedSignOut
-                            ]
-                          <|
-                            Styled.textWith [ centerY, centerX ] "Sign Out"
-                        ]
-
-                    else
-                        []
-                   )
-            )
+            [ navbarDesktopLinkItem [ alignLeft ] { url = "/", label = "Home" }
+            , navbarDesktopLinkItem [ alignLeft ] { url = "/admin", label = "Admin" } |> viewIf userIsAdmin
+            , navbarDesktopLinkItem [ alignLeft ] { url = "/add-site", label = "Add Site" }
+            , el
+                [ width <| px 100
+                , alignRight
+                , height fill
+                , mouseOver [ Background.color Styles.color.lightBlue ]
+                , pointer
+                , onClick <| toMsg ClickedSignOut
+                ]
+                (Styled.textWith [ centerY, centerX ] "Sign Out")
+                |> viewIf userIsSignedIn
+            ]
 
 
-navbarLinkItem styles { url, label } =
+navbarDesktopLinkItem styles { url, label } =
     link
         ([ height fill
-         , mouseOver [ Background.color <| rgb255 173 216 230 ]
+         , mouseOver [ Background.color Styles.color.lightBlue ]
          ]
             ++ styles
         )
@@ -211,5 +302,39 @@ navbarLinkItem styles { url, label } =
         }
 
 
-css =
-    [ Html.node "link" [ rel "stylesheet", href "/style.css" ] [] ]
+navbarMobileLinkItem { url, label } =
+    link
+        [ padding 20
+        ]
+        { url = url
+        , label =
+            el
+                [ centerY
+                , width fill
+                , Font.center
+                ]
+            <|
+                Element.text label
+        }
+
+
+footer viewportWidth =
+    div footerStyle
+        [ div []
+            [ if viewportWidth > 480 then
+                Html.text "Contact: "
+
+              else
+                div [] []
+            , a
+                [ href "mailto:hello@swiftcom.app"
+                , style "text-decoration" "none"
+                ]
+                [ text "SwiftCom" ]
+            ]
+        , a
+            [ href "https://elm-lang.org/"
+            , style "text-decoration" "none"
+            ]
+            [ Html.text "Made with ♥ using Elm" ]
+        ]

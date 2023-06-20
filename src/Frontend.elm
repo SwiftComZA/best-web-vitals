@@ -63,6 +63,10 @@ scrollPageToTop =
     Task.perform (\_ -> Noop) (Browser.Dom.setViewport 0 0)
 
 
+closeMobileMenu =
+    Task.perform (\_ -> Shared Shared.CloseMenu) (Task.succeed ())
+
+
 type alias Msg =
     FrontendMsg
 
@@ -87,11 +91,11 @@ update msg model =
                         Pages.init (Route.fromUrl url) model.shared url model.key
                 in
                 ( { model | url = url, page = page }
-                , Cmd.batch [ Effect.toCmd ( Shared, Page ) effect, scrollPageToTop ]
+                , Cmd.batch [ Effect.toCmd ( Shared, Page ) effect, scrollPageToTop, closeMobileMenu ]
                 )
 
             else
-                ( { model | url = url }, Cmd.none )
+                ( { model | url = url }, closeMobileMenu )
 
         Shared sharedMsg ->
             let

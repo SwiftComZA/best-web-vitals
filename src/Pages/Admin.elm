@@ -4,8 +4,7 @@ import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..))
 import Bridge exposing (..)
 import Dict
 import Effect exposing (Effect)
-import Element exposing (centerX, column, el, fill, fillPortion, layout, mouseOver, padding, paddingEach, paddingXY, pointer, px, rgb, rgba, row, shrink, spacing, table, text, width)
-import Element.Border as Border
+import Element exposing (centerX, column, el, fill, fillPortion, layout, maximum, minimum, mouseOver, padding, paddingEach, paddingXY, pointer, rgb, row, spacing, table, text, width)
 import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Input as Input
@@ -111,13 +110,13 @@ view shared model =
         sites =
             shared.sites |> Dict.values |> Site.sort shared.sort
     in
-    { title = ""
+    { title = "Admin"
     , body =
-        [ layout [ width fill, paddingXY 50 20 ] <|
+        [ layout [ width fill, paddingXY 20 75 ] <|
             viewIfElse (shared.user |> Maybe.map (\user -> user.isAdmin) |> boolToBool)
                 (column [ width fill, spacing 50 ]
                     [ Styled.textWith [ centerX ] "Websites"
-                    , siteScoresTable sites
+                    , el [ width fill ] <| siteScoresTable sites
                     , Styled.textWith [ centerX ] "Categories"
                     , categoriesTable model shared.categories
                     , Styled.textWith [ centerX ] "Frontend Languages"
@@ -136,7 +135,7 @@ view shared model =
 
 siteScoresTable : List Site -> Element.Element Msg
 siteScoresTable siteList =
-    table [ centerX, Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 } ]
+    table [ centerX, Styles.borderShadow, width <| minimum 1240 fill ]
         { data = siteList
         , columns =
             [ { header = tableCell [ Font.bold, pointer, onClick <| ClickedChangeSort Domain ] <| text "Domain"
@@ -247,15 +246,15 @@ tableCell atts content =
 
 categoriesTable : Model -> List Site.Category -> Element.Element Msg
 categoriesTable model categories =
-    table [ centerX, Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }, width shrink ]
+    table [ centerX, Styles.borderShadow, width <| maximum 500 fill ]
         { data = (categories |> List.map (\cat -> Data cat)) ++ [ Input ]
         , columns =
             [ { header = tableCell [ Font.bold ] <| text "Category"
-              , width = px 400
+              , width = fillPortion 8
               , view = categoryRow model <| \cat -> tableCell [] <| text cat
               }
             , { header = tableCell [ Font.center, Font.bold ] <| text ""
-              , width = px 50
+              , width = fillPortion 1
               , view =
                     \cat ->
                         case cat of
@@ -282,15 +281,15 @@ categoriesTable model categories =
 
 frontendLangsTable : Model -> List Site.FrontendLang -> Element.Element Msg
 frontendLangsTable model frontendLangs =
-    table [ centerX, Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }, width shrink ]
+    table [ centerX, Styles.borderShadow, width <| maximum 500 fill ]
         { data = (frontendLangs |> List.map (\flang -> Data flang)) ++ [ Input ]
         , columns =
             [ { header = tableCell [ Font.bold ] <| text "Frontend Languages"
-              , width = px 400
+              , width = fillPortion 8
               , view = frontendLangRow model <| \flang -> tableCell [] <| text flang
               }
             , { header = tableCell [ Font.center, Font.bold ] <| text ""
-              , width = px 50
+              , width = fillPortion 1
               , view =
                     \flang ->
                         case flang of

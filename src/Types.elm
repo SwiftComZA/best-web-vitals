@@ -1,6 +1,6 @@
 module Types exposing (..)
 
-import Api.Site exposing (Category, FrontendLang, Platform, Site)
+import Api.Site exposing (Category, FrontendLang, Platform, Site, Url)
 import Api.User exposing (Email, User, UserFull)
 import Bridge
 import Browser
@@ -26,8 +26,8 @@ type alias FrontendModel =
 
 type alias BackendModel =
     { users : Dict Email UserFull
-    , sessions : Dict SessionId Session
-    , sites : Dict String Site
+    , authenticatedSessions : Dict SessionId Session
+    , sites : Dict Api.Site.Url Site
     , categories : Set Category
     , frontendLangs : Set FrontendLang
     }

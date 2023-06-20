@@ -4,14 +4,15 @@ import Api.Data exposing (Data(..))
 import Api.User exposing (User, validateUser)
 import Bridge exposing (ToBackend(..), sendToBackend)
 import Effect exposing (Effect)
-import Element exposing (centerX, column, fill, layout, paddingXY, px, spacing, width)
+import Element exposing (centerX, centerY, column, fill, height, htmlAttribute, layout, maximum, paddingXY, spacing, width)
 import Element.Input as Input
-import Evergreen.V1.Pages.AddSite exposing (Field)
 import Gen.Params.Register exposing (Params)
 import Gen.Route as Route
+import Html.Attributes exposing (style)
 import Page
 import Request exposing (Request)
 import Shared
+import String exposing (fromInt)
 import UI.Styled as Styled
 import UI.Styles as Styles
 import Utils.Misc exposing (onEnter)
@@ -144,9 +145,20 @@ view : Shared.Model -> Model -> View Msg
 view _ model =
     { title = "Register"
     , body =
-        [ layout [ width fill, paddingXY 50 100 ] <|
-            column [ centerX ]
-                [ column [ spacing 20, width <| px 500 ]
+        [ layout
+            [ width fill
+            , paddingXY 20 75
+            , height fill
+            , htmlAttribute <|
+                style "min-height"
+                    ("calc(100vh - "
+                        ++ fromInt (Styles.navbarHeight + Styles.footerHeight)
+                        ++ "px)"
+                    )
+            ]
+          <|
+            column [ centerX, centerY, width <| maximum 500 fill ]
+                [ column [ centerX, spacing 20, width fill ]
                     [ Input.username
                         (Styles.inputStyle ++ [ onEnter ClickedSubmit ])
                         { onChange = Updated Username

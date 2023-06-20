@@ -1,0 +1,47 @@
+.burger-menu-container {
+    position: relative;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    margin-top: -5px;
+}
+
+.burger-menu-bar {
+    position: absolute;
+    transition: all 0.1s ease-out;
+}
+
+.burger-menu-bar.top {
+    transform: rotate(0deg);
+    top: 5px;
+}
+
+.burger-menu-bar.middle {
+    opacity: 1;
+    top: 15px;
+}
+
+.burger-menu-bar.bottom {
+    transform: rotate(0deg);
+    top: 25px;
+}
+
+.burger-menu-bar.open {
+    transform: rotate(0deg);
+}
+
+.burger-menu-bar.top.open {
+    transform: rotate(45deg);
+    top: 15px;
+}
+
+.burger-menu-bar.middle.open {
+    transform: rotate(45deg);
+    top: 15px;
+    opacity: 0;
+}
+
+.burger-menu-bar.bottom.open {
+    transform: rotate(-45deg);
+    top: 15px;
+}

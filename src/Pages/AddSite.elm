@@ -3,14 +3,17 @@ module Pages.AddSite exposing (Model, Msg, page)
 import Api.Site
 import Bridge exposing (..)
 import Effect exposing (Effect)
-import Element exposing (centerX, fill, paddingXY, px, spacing, width)
+import Element exposing (centerX, centerY, fill, height, htmlAttribute, maximum, paddingXY, spacing, width)
 import Element.Input as Input
 import Gen.Params.AddSite exposing (Params)
+import Html.Attributes exposing (style)
 import Page
 import Request
 import Shared
+import String exposing (fromInt)
 import UI.Styled as Styled
 import UI.Styles as Styles
+import Utils.Misc exposing (onEnter)
 import View exposing (View)
 
 
@@ -121,11 +124,22 @@ view : Shared.Model -> Model -> View Msg
 view shared model =
     { title = "Add Site"
     , body =
-        [ Element.layout [ width fill, paddingXY 50 100 ] <|
-            Element.column [ centerX ]
-                [ Element.column [ spacing 20, width <| px 400 ]
+        [ Element.layout
+            [ width fill
+            , paddingXY 20 75
+            , height fill
+            , htmlAttribute <|
+                style "min-height"
+                    ("calc(100vh - "
+                        ++ fromInt (Styles.navbarHeight + Styles.footerHeight)
+                        ++ "px)"
+                    )
+            ]
+          <|
+            Element.column [ centerX, centerY, width <| maximum 500 fill ]
+                [ Element.column [ spacing 20, width fill ]
                     [ Input.text
-                        Styles.inputStyle
+                        (Styles.inputStyle ++ [ onEnter SubmitSite ])
                         { onChange = Updated Site
                         , placeholder = Just <| Input.placeholder [] <| Element.text "Website"
                         , text = model.site

@@ -1,9 +1,9 @@
 module Pages.Home_ exposing (Model, Msg(..), page)
 
-import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..), extractDomain)
+import Api.Site as Site exposing (Platform(..), Score(..), ScoreType(..), Site, Sort(..), extractDomain)
 import Dict
 import Effect exposing (Effect)
-import Element exposing (centerX, column, el, fill, fillPortion, layout, link, newTabLink, padding, paddingEach, paddingXY, pointer, px, rgb, rgba, row, shrink, spacing, table, text, width)
+import Element exposing (alignRight, centerX, centerY, column, el, fill, height, html, layout, maximum, newTabLink, padding, paddingEach, paddingXY, pointer, px, rgb, row, shrink, spacing, table, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -15,6 +15,8 @@ import Shared
 import String exposing (fromInt)
 import UI.Styled as Styled
 import UI.Styles as Styles exposing (noPadding)
+import Vectors.DesktopIcon exposing (desktopIcon)
+import Vectors.MobileIcon exposing (mobileIcon)
 import View exposing (View)
 
 
@@ -34,12 +36,13 @@ page shared _ =
 
 type alias Model =
     { searchTerm : String
+    , platform : Platform
     }
 
 
 init : ( Model, Effect Msg )
 init =
-    ( { searchTerm = "" }
+    ( { searchTerm = "", platform = Mobile }
     , Effect.none
     )
 
@@ -51,6 +54,7 @@ init =
 type Msg
     = ClickedChangeSort Sort
     | UpdatedSearchTerm String
+    | ClickedPlatform Platform
     | NoOp
 
 
@@ -62,6 +66,9 @@ update msg model =
 
         UpdatedSearchTerm term ->
             ( { model | searchTerm = term }, Effect.none )
+
+        ClickedPlatform platform ->
+            ( { model | platform = platform }, Effect.none )
 
         NoOp ->
             ( model, Effect.none )
@@ -85,118 +92,187 @@ view shared model =
                 |> Site.sort shared.sort
                 |> List.filter (\site -> site.url |> String.contains model.searchTerm)
     in
-    { title = ""
+    { title = "Best Web Vitals"
     , body =
-        [ layout [ width fill, paddingXY 50 50 ] <|
+        [ layout [ width fill, paddingXY 20 50 ] <|
             column [ width fill, spacing 50 ]
-                [ Styled.textWith [ centerX, Font.bold ] "A list of sites with Core Web Vitals scores."
+                [ Styled.wrappedTextWith
+                    [ centerX
+                    , Font.bold
+                    , Font.center
+                    ]
+                    "A Web Vitals Leaderboard"
                 , Input.text
-                    (Styles.inputStyle ++ [ width <| px 400, centerX ])
+                    (Styles.inputStyle ++ [ width <| maximum 400 fill, centerX ])
                     { onChange = UpdatedSearchTerm
                     , placeholder = Just <| Input.placeholder [] <| Element.text "Search"
                     , text = model.searchTerm
                     , label = Input.labelHidden ""
                     }
-                , siteScoresTable sites
+                , column [ width fill ]
+                    [ row [ alignRight, padding 20, spacing 10 ]
+                        [ el
+                            [ height <| px 30
+                            , width <| px 30
+                            , pointer
+                            , onClick <| ClickedPlatform Mobile
+                            ]
+                          <|
+                            html <|
+                                mobileIcon (model.platform == Mobile)
+                        , el
+                            [ height <| px 30
+                            , width <| px 30
+                            , pointer
+                            , onClick <| ClickedPlatform Desktop
+                            ]
+                          <|
+                            html <|
+                                desktopIcon (model.platform == Desktop)
+                        ]
+                    , siteScoresTable model.platform shared.viewportWidth sites
+                    ]
                 ]
         ]
     }
 
 
-siteScoresTable : List Site -> Element.Element Msg
-siteScoresTable siteList =
-    table [ centerX, Border.shadow { offset = ( 0, 0 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 } ]
-        { data = siteList
-        , columns =
+siteScoresTable : Platform -> Float -> List Site -> Element.Element Msg
+siteScoresTable platform viewportWidth siteList =
+    let
+        columns =
             [ { header = tableCell [ Font.bold, pointer, onClick <| ClickedChangeSort Domain ] <| text "Domain"
-              , width = fillPortion 1
-              , view = \site -> tableCell [] <| newTabLink [] { url = "https://pagespeed.web.dev/analysis?url=" ++ site.url, label = text <| extractDomain site.url }
+              , width = fill
+              , view =
+                    \site ->
+                        tableCell [] <|
+                            newTabLink []
+                                { url = "https://pagespeed.web.dev/analysis?url=" ++ site.url
+                                , label = text <| extractDomain site.url
+                                }
               }
             , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ClickedChangeSort Category ] <| text "Category"
-              , width = fillPortion 1
+              , width = fill
               , view = \site -> tableCell [ Font.center ] <| text site.category
               }
             , { header = tableCell [ Font.center, Font.bold, pointer, onClick <| ClickedChangeSort FrontendLang ] <| text "Frontend Language"
-              , width = fillPortion 1
+              , width = fill
               , view = \site -> tableCell [ Font.center ] <| text site.frontendLang
               }
             ]
-                ++ tableScoreColumns
+    in
+    table
+        [ centerX
+        , Styles.borderShadow
+        , paddingEach { noPadding | bottom = 10 }
+        ]
+        { data = siteList
+        , columns =
+            (if viewportWidth < 480 then
+                columns |> List.take 1
+
+             else if viewportWidth < 720 then
+                columns |> List.take 2
+
+             else
+                columns
+            )
+                ++ tableScoreColumns platform viewportWidth
         }
 
 
-tableScoreColumns : List (Element.Column Site Msg)
-tableScoreColumns =
+tableScoreColumns : Platform -> Float -> List (Element.Column Site Msg)
+tableScoreColumns platform viewportWidth =
+    let
+        scoreHeadings =
+            [ el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore Perf) ] <|
+                text
+                    (if viewportWidth < 860 then
+                        "Score"
+
+                     else
+                        "Performance"
+                    )
+            , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore A11y) ] <| text "Accessibility"
+            , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore BP) ] <| text "Best Practices"
+            , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore SEO) ] <| text "SEO"
+            ]
+    in
     [ { header =
             tableCell [ Font.bold, width fill ] <|
                 column [ width fill, centerX, Font.center ]
-                    [ el [ centerX, pointer, onClick <| ClickedChangeSort (MobileScore Perf) ] <| text "Mobile Score"
-                    , row [ width fill, paddingEach { noPadding | top = 10 } ]
-                        [ el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore Perf) ] <| text "perf"
-                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore A11y) ] <| text "a11y"
-                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore BP) ] <| text "bp"
-                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (MobileScore SEO) ] <| text "seo"
-                        ]
+                    [ row [ width fill ]
+                        (if viewportWidth < 860 then
+                            scoreHeadings |> List.take 1
+
+                         else if viewportWidth < 1024 then
+                            scoreHeadings |> List.take 2
+
+                         else if viewportWidth < 1280 then
+                            scoreHeadings |> List.take 3
+
+                         else
+                            scoreHeadings
+                        )
                     ]
-      , width = fillPortion 2
+      , width = maximum 600 fill
       , view =
             \site ->
-                case site.mobileScore of
+                case
+                    (case platform of
+                        Mobile ->
+                            .mobileScore
+
+                        Desktop ->
+                            .desktopScore
+                    )
+                    <|
+                        site
+                of
                     Pending ->
-                        tableCell [] <| shadowEl [ Font.center, width fill, scoreColor <| -1 ] <| text "Pending"
+                        tableCell [] <| scoreLabel [ width shrink, scoreColor -1 ] <| Styled.textWith [ centerX, centerY ] "Pending"
 
                     Failed ->
-                        tableCell [] <| shadowEl [ Font.center, width fill, scoreColor <| 0 ] <| text "Failed"
+                        tableCell [] <| scoreLabel [ width shrink, scoreColor 0 ] <| Styled.textWith [ centerX, centerY, paddingXY 20 0 ] "Failed"
 
                     Success score ->
-                        tableCell [] <|
-                            row [ width fill ]
-                                [ shadowEl [ width fill, Font.center, scoreColor <| score.performance * 100 ] <| text <| fromInt <| round <| score.performance * 100
-                                , shadowEl [ width fill, Font.center, scoreColor <| score.accessibility * 100 ] <| text <| fromInt <| round <| score.accessibility * 100
-                                , shadowEl [ width fill, Font.center, scoreColor <| score.bestPractices * 100 ] <| text <| fromInt <| round <| score.bestPractices * 100
-                                , shadowEl [ width fill, Font.center, scoreColor <| score.seo * 100 ] <| text <| fromInt <| round <| score.seo * 100
+                        let
+                            scoreData =
+                                [ el [ width fill ] <| scoreLabel [ scoreColor score.performance ] <| Styled.textWith [ centerX, centerY ] <| formatScore score.performance
+                                , el [ width fill ] <| scoreLabel [ scoreColor score.accessibility ] <| Styled.textWith [ centerX, centerY ] <| formatScore score.accessibility
+                                , el [ width fill ] <| scoreLabel [ scoreColor score.bestPractices ] <| Styled.textWith [ centerX, centerY ] <| formatScore score.bestPractices
+                                , el [ width fill ] <| scoreLabel [ scoreColor score.seo ] <| Styled.textWith [ centerX, centerY ] <| formatScore score.seo
                                 ]
-      }
-    , { header =
-            tableCell [ Font.bold, width fill ] <|
-                column [ width fill, centerX, Font.center ]
-                    [ el [ centerX, pointer, onClick <| ClickedChangeSort (DesktopScore Perf) ] <| text "Desktop Score"
-                    , row [ width fill, paddingEach { noPadding | top = 10 } ]
-                        [ el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (DesktopScore Perf) ] <| text "perf"
-                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (DesktopScore A11y) ] <| text "a11y"
-                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (DesktopScore BP) ] <| text "bp"
-                        , el [ width fill, Font.center, pointer, onClick <| ClickedChangeSort (DesktopScore SEO) ] <| text "seo"
-                        ]
-                    ]
-      , width = fillPortion 2
-      , view =
-            \site ->
-                case site.desktopScore of
-                    Pending ->
-                        tableCell [] <| shadowEl [ Font.center, width fill, scoreColor <| -1 ] <| text "Pending"
+                        in
+                        tableCell [ height <| px 45 ] <|
+                            row [ width fill, centerY ]
+                                (if viewportWidth < 860 then
+                                    scoreData |> List.take 1
 
-                    Failed ->
-                        tableCell [] <| shadowEl [ Font.center, width fill, scoreColor <| 0 ] <| text "Failed"
+                                 else if viewportWidth < 1024 then
+                                    scoreData |> List.take 2
 
-                    Success score ->
-                        tableCell [] <|
-                            row [ width fill ]
-                                [ shadowEl [ width fill, Font.center, scoreColor <| score.performance * 100 ] <| text <| fromInt <| round <| score.performance * 100
-                                , shadowEl [ width fill, Font.center, scoreColor <| score.accessibility * 100 ] <| text <| fromInt <| round <| score.accessibility * 100
-                                , shadowEl [ width fill, Font.center, scoreColor <| score.bestPractices * 100 ] <| text <| fromInt <| round <| score.bestPractices * 100
-                                , shadowEl [ width fill, Font.center, scoreColor <| score.seo * 100 ] <| text <| fromInt <| round <| score.seo * 100
-                                ]
+                                 else if viewportWidth < 1280 then
+                                    scoreData |> List.take 3
+
+                                 else
+                                    scoreData
+                                )
       }
     ]
 
 
 tableCell : List (Element.Attribute Msg) -> Element.Element Msg -> Element.Element Msg
 tableCell atts content =
-    el (atts ++ [ padding 10 ]) <| content
+    el (atts ++ [ padding 10, centerY ]) <| content
 
 
 scoreColor : Float -> Element.Attribute msg
-scoreColor score =
+scoreColor scoreFloat =
+    let
+        score =
+            scoreFloat * 100
+    in
     Background.color <|
         if score >= 75 then
             rgb 0 1 0
@@ -214,9 +290,19 @@ scoreColor score =
             rgb 0.5 0.8 1
 
 
-shadowEl styles =
+scoreLabel styles =
     el
-        ([ Border.innerShadow { offset = ( 0, 0 ), size = 0, blur = 10, color = Element.rgba 0 0 0 0.5 }
+        ([ Border.rounded 17
+         , height <| px 34
+         , centerX
+         , width <| px 34
+         , Styles.innerBorderShadow
+         , Font.size 15
+         , Font.center
          ]
             ++ styles
         )
+
+
+formatScore score =
+    score * 100 |> round |> fromInt

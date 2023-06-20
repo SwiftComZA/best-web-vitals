@@ -44,7 +44,7 @@ subscriptions _ =
 init : ( Model, Cmd BackendMsg )
 init =
     ( { users = Dict.empty
-      , sessions = Dict.empty
+      , authenticatedSessions = Dict.empty
       , sites = Dict.empty
       , categories = Set.empty
       , frontendLangs = Set.empty
@@ -61,8 +61,8 @@ update msg model =
 
         AuthenticateSession sessionId clientId user now ->
             ( { model
-                | sessions =
-                    model.sessions
+                | authenticatedSessions =
+                    model.authenticatedSessions
                         |> Dict.insert sessionId
                             { user = user.email
                             , expires = now |> Time.add Time.Hour 24 Time.utc
@@ -74,7 +74,7 @@ update msg model =
         VerifySession sessionId clientId now ->
             let
                 maybeUser =
-                    model.sessions
+                    model.authenticatedSessions
                         |> Dict.get sessionId
                         |> Maybe.andThen
                             (\session ->
@@ -198,7 +198,7 @@ updateFromFrontend sessionId clientId msg model =
             ( model, Cmd.none )
 
         AttemptSignOut ->
-            ( { model | sessions = model.sessions |> Dict.remove sessionId }, sendToFrontend clientId <| SignOutUser )
+            ( { model | authenticatedSessions = model.authenticatedSessions |> Dict.remove sessionId }, sendToFrontend clientId <| SignOutUser )
 
         FetchSites ->
             ( model, sendToFrontend clientId <| SendSites model.sites )
@@ -398,7 +398,7 @@ isAdminSession : Model -> SessionId -> Bool
 isAdminSession model sessionId =
     let
         maybeUser =
-            model.sessions
+            model.authenticatedSessions
                 |> Dict.get sessionId
                 |> Maybe.map .user
                 |> Maybe.andThen (\user -> model.users |> Dict.get user)

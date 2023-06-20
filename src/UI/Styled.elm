@@ -7,6 +7,7 @@ import Html
 import Html.Attributes
 import Html.Events
 import UI.Styles as Styles
+import Utils.List exposing (with)
 
 
 
@@ -22,6 +23,14 @@ textWith styles t =
     Element.el styles <| Element.text t
 
 
+wrappedText t =
+    wrappedTextWith [] t
+
+
+wrappedTextWith styles t =
+    Element.paragraph styles [ Element.text t ]
+
+
 submitButton args =
     submitButtonWith [] args
 
@@ -30,10 +39,11 @@ submitButtonWith styles { label, onPress, disabled } =
     if disabled then
         Input.button
             (styles
-                ++ [ Font.color Styles.color.lightGrey
-                   , Element.mouseOver []
-                   , Element.htmlAttribute <| Html.Attributes.style "cursor" "default"
-                   ]
+                |> with
+                    [ Font.color Styles.color.lightGrey
+                    , Element.mouseOver []
+                    , Element.htmlAttribute <| Html.Attributes.style "cursor" "default"
+                    ]
             )
             { label = label
             , onPress = Nothing
@@ -51,14 +61,10 @@ dropdown args =
 
 
 dropdownWith styles { label, onChange } options =
-    Element.el
-        ((Element.width <| Element.fill)
-            :: styles
-        )
-    <|
+    Element.el ([ Element.width Element.fill ] |> with styles) <|
         Element.html <|
             Html.select
-                [ Html.Events.onInput <| onChange
+                [ Html.Events.onInput onChange
                 , Html.Attributes.style "width" "100%"
                 , Html.Attributes.style "height" "100%"
                 , Html.Attributes.style "font" "inherit"
@@ -95,3 +101,13 @@ message maybeMessage =
 
         Nothing ->
             Element.none
+
+
+svg url width height =
+    Element.html <|
+        Html.node "svg"
+            [ Html.Attributes.attribute "xmlns" url
+            , Html.Attributes.width width
+            , Html.Attributes.height height
+            ]
+            []

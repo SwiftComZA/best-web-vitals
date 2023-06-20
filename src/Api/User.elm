@@ -5,14 +5,14 @@ import Regex
 
 type alias User =
     { username : String
-    , email : String
+    , email : Email
     , isAdmin : Bool
     }
 
 
 type alias UserFull =
     { username : String
-    , email : String
+    , email : Email
     , isAdmin : Bool
     , passwordHash : String
     , salt : String
