@@ -3,7 +3,8 @@ module Pages.AddSite exposing (Model, Msg, page)
 import Api.Site
 import Bridge exposing (..)
 import Effect exposing (Effect)
-import Element exposing (centerX, centerY, fill, height, htmlAttribute, maximum, paddingXY, spacing, width)
+import Element exposing (centerX, centerY, fill, height, htmlAttribute, link, maximum, none, paddingXY, row, spacing, width)
+import Element.Font as Font
 import Element.Input as Input
 import Gen.Params.AddSite exposing (Params)
 import Html.Attributes exposing (style)
@@ -166,7 +167,14 @@ view shared model =
                         , onPress = Just SubmitSite
                         , disabled = model.category == Nothing || model.frontendLang == Nothing
                         }
-                    , Styled.message model.message
+                    , row [ spacing 5, centerX ]
+                        [ Styled.message model.message
+                        , if model.message |> Maybe.map (\msg -> Tuple.second msg |> not) |> Maybe.withDefault False then
+                            link [ Font.color <| Styles.color.green, Font.underline ] { url = "/", label = Element.text "View Leaderboard" }
+
+                          else
+                            none
+                        ]
                     ]
                 ]
         ]

@@ -17,7 +17,7 @@ color =
     , grey = rgb255 150 150 150
     , white = rgb255 0xFF 0xFF 0xFF
     , red = rgb255 0xFF 0x00 0x00
-    , green = rgb255 0x00 0xFF 0x00
+    , green = rgb255 63 204 67
     }
 
 
