@@ -100,7 +100,7 @@ message maybeMessage =
                 content
 
         Nothing ->
-            Element.none
+            Element.el [ Element.height <| Element.px 20 ] Element.none
 
 
 svg url width height =

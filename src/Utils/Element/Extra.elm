@@ -1,4 +1,22 @@
-module Utils.Element.Extra exposing (absolute, attIf, bottom, fixed, hidden, left, overflow, position, relative, right, scroll, static, sticky, top, visible)
+module Utils.Element.Extra exposing
+    ( absolute
+    , attIf
+    , bottom
+    , fixed
+    , hidden
+    , left
+    , overflow
+    , position
+    , relative
+    , right
+    , scroll
+    , static
+    , sticky
+    , top
+    , transition
+    , visible
+    , zIndex
+    )
 
 import Element
 import Html.Attributes
@@ -130,3 +148,21 @@ hidden =
 
 scroll =
     Scroll
+
+
+
+-- Transition
+
+
+transition : String -> Element.Attribute msg
+transition val =
+    Element.htmlAttribute <| Html.Attributes.style "transition" val
+
+
+
+-- Z-Index
+
+
+zIndex : Int -> Element.Attribute msg
+zIndex val =
+    Element.htmlAttribute <| Html.Attributes.style "z-index" (val |> fromInt)

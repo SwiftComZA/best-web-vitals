@@ -10,9 +10,11 @@ import String exposing (fromInt)
 
 color =
     { blue = rgb255 0x72 0x9F 0xCF
+    , darkBlue = rgb255 24 81 125
     , darkCharcoal = rgb255 0x2E 0x34 0x36
-    , lightBlue = rgb255 0xC5 0xE8 0xF7
+    , lightBlue = rgb255 86 171 225
     , lightGrey = rgb255 0xE0 0xE0 0xE0
+    , grey = rgb255 150 150 150
     , white = rgb255 0xFF 0xFF 0xFF
     , red = rgb255 0xFF 0x00 0x00
     , green = rgb255 0x00 0xFF 0x00

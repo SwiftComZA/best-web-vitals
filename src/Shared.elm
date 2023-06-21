@@ -5,7 +5,7 @@ import Api.User exposing (User)
 import Bridge exposing (ToBackend(..), sendToBackend)
 import Browser.Dom exposing (Viewport, getViewport)
 import Dict exposing (Dict)
-import Element exposing (alignLeft, alignRight, centerX, centerY, column, el, fill, height, html, htmlAttribute, layout, link, maximum, mouseOver, padding, pointer, px, rgb, rgba, row, width)
+import Element exposing (alignLeft, alignRight, centerX, centerY, column, el, fill, height, html, htmlAttribute, image, layout, link, maximum, minimum, mouseOver, padding, paddingXY, pointer, px, rgb, rgba, row, shrink, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -199,7 +199,17 @@ navbarMobile menuOpen userIsSignedIn userIsAdmin toMsg =
                     (not menuOpen)
                     [ borderShadow ]
             )
-            [ el [ alignRight, centerY, padding 24 ] <| burgerMenu menuOpen toMsg
+            [ row [ width fill, height <| px 75 ]
+                [ link [ padding 10 ]
+                    { url = "/"
+                    , label =
+                        image [ height <| px 55 ]
+                            { src = "/images/logo.jpeg"
+                            , description = "Logo"
+                            }
+                    }
+                , el [ alignRight, centerY, padding 24 ] <| burgerMenu menuOpen toMsg
+                ]
             , column
                 [ height <|
                     maximum
@@ -214,6 +224,7 @@ navbarMobile menuOpen userIsSignedIn userIsAdmin toMsg =
                 , overflow hidden
                 , top 75
                 , htmlAttribute <| style "transition" "max-height 0.1s ease-out"
+                , htmlAttribute <| style "min-height" "0"
                 , width fill
                 , Border.shadow { offset = ( 0, 20 ), size = 0, blur = 20, color = rgba 0 0 0 0.15 }
                 , Background.color <| Styles.color.white
@@ -221,12 +232,13 @@ navbarMobile menuOpen userIsSignedIn userIsAdmin toMsg =
                 , Border.color Styles.color.lightGrey
                 , Border.width 1
                 ]
-                [ navbarMobileLinkItem { url = "/", label = "Home" }
+                [ navbarMobileLinkItem { url = "/", label = "Leaderboard" }
                 , navbarMobileLinkItem { url = "/add-site", label = "Add Site" }
                 , navbarMobileLinkItem { url = "/admin", label = "Admin" } |> viewIf userIsAdmin
                 , el
                     [ onClick <| toMsg ClickedSignOut
-                    , padding 20
+                    , padding 10
+                    , height <| px 50
                     ]
                     (Styled.textWith [ centerY, centerX ] "Sign Out")
                     |> viewIf userIsSignedIn
@@ -267,9 +279,17 @@ navbarDesktop userIsSignedIn userIsAdmin toMsg =
             , Styles.borderShadow
             , Background.color <| rgb 1 1 1
             ]
-            [ navbarDesktopLinkItem [ alignLeft ] { url = "/", label = "Home" }
-            , navbarDesktopLinkItem [ alignLeft ] { url = "/admin", label = "Admin" } |> viewIf userIsAdmin
-            , navbarDesktopLinkItem [ alignLeft ] { url = "/add-site", label = "Add Site" }
+            [ link [ padding 10 ]
+                { url = "/"
+                , label =
+                    image [ height <| px 55 ]
+                        { src = "/images/logo.jpeg"
+                        , description = "Logo"
+                        }
+                }
+            , navbarDesktopLinkItem [ alignRight ] { url = "/", label = "Leaderboard" }
+            , navbarDesktopLinkItem [ alignRight ] { url = "/admin", label = "Admin" } |> viewIf userIsAdmin
+            , navbarDesktopLinkItem [ alignRight ] { url = "/add-site", label = "Add Site" }
             , el
                 [ width <| px 100
                 , alignRight
@@ -294,7 +314,8 @@ navbarDesktopLinkItem styles { url, label } =
         , label =
             el
                 [ centerY
-                , width <| px 100
+                , width <| minimum 100 shrink
+                , padding 20
                 , Font.center
                 ]
             <|
@@ -304,14 +325,13 @@ navbarDesktopLinkItem styles { url, label } =
 
 navbarMobileLinkItem { url, label } =
     link
-        [ padding 20
-        ]
+        [ height <| px 50 ]
         { url = url
         , label =
             el
                 [ centerY
                 , width fill
-                , Font.center
+                , padding 10
                 ]
             <|
                 Element.text label

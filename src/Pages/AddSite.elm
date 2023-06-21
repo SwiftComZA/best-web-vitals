@@ -10,7 +10,7 @@ import Html.Attributes exposing (style)
 import Page
 import Request
 import Shared
-import String exposing (fromInt)
+import String exposing (fromInt, isEmpty)
 import UI.Styled as Styled
 import UI.Styles as Styles
 import Utils.Misc exposing (onEnter)
@@ -35,6 +35,7 @@ type alias Model =
     { site : String
     , category : Maybe Api.Site.Category
     , frontendLang : Maybe Api.Site.FrontendLang
+    , message : Maybe ( String, Bool )
     }
 
 
@@ -43,6 +44,7 @@ init =
     ( { site = ""
       , category = Nothing
       , frontendLang = Nothing
+      , message = Nothing
       }
     , Effect.batch
         [ Effect.fromCmd <| sendToBackend <| FetchCategories
@@ -85,26 +87,30 @@ update msg model =
             )
 
         SubmitSite ->
-            let
-                validSite =
-                    case model.site |> String.split "://" of
-                        [ "http", _ ] ->
-                            model.site
+            if isEmpty model.site then
+                ( { model | message = Just ( "Please enter a valid website domain", True ) }, Effect.none )
 
-                        [ "https", _ ] ->
-                            model.site
+            else
+                let
+                    validSite =
+                        case model.site |> String.split "://" of
+                            [ "http", _ ] ->
+                                model.site
 
-                        _ ->
-                            "https://" ++ model.site
-            in
-            case ( model.category, model.frontendLang ) of
-                ( Just category, Just frontendLang ) ->
-                    ( { model | site = "" }
-                    , Effect.fromCmd <| sendToBackend <| RequestSiteStats validSite category frontendLang
-                    )
+                            [ "https", _ ] ->
+                                model.site
 
-                _ ->
-                    ( model, Effect.none )
+                            _ ->
+                                "https://" ++ model.site
+                in
+                case ( model.category, model.frontendLang ) of
+                    ( Just category, Just frontendLang ) ->
+                        ( { model | site = "", message = Nothing }
+                        , Effect.fromCmd <| sendToBackend <| RequestSiteStats validSite category frontendLang
+                        )
+
+                    _ ->
+                        ( model, Effect.none )
 
 
 
@@ -141,7 +147,7 @@ view shared model =
                     [ Input.text
                         (Styles.inputStyle ++ [ onEnter SubmitSite ])
                         { onChange = Updated Site
-                        , placeholder = Just <| Input.placeholder [] <| Element.text "Website"
+                        , placeholder = Just <| Input.placeholder [] <| Element.text "Website Domain"
                         , text = model.site
                         , label = Input.labelHidden ""
                         }
@@ -160,6 +166,7 @@ view shared model =
                         , onPress = Just SubmitSite
                         , disabled = model.category == Nothing || model.frontendLang == Nothing
                         }
+                    , Styled.message model.message
                     ]
                 ]
         ]
