@@ -73,12 +73,11 @@ toFrontend old =
 
 migrate_Types_BackendModel : Evergreen.V1.Types.BackendModel -> Evergreen.V10.Types.BackendModel
 migrate_Types_BackendModel old =
-    { users = (Unimplemented {- Type `Dict (Evergreen.V10.Api.User.Email) (Evergreen.V10.Api.User.UserFull)` was added in V10. I need you to set a default value. -})
-    , authenticatedSessions = (Unimplemented {- Type `Dict (lamdera/core:Lamdera.SessionId) (Evergreen.V10.Types.Session)` was added in V10. I need you to set a default value. -})
-    , sites = old.sites |> Dict.toList |> List.map (Tuple.mapBoth (Unimplemented {- Type changed from `String` to `Evergreen.V10.Api.Site.Url`. I need you to write this migration. -}) migrate_Api_Site_Site) |> Dict.fromList
+    { users = Dict.empty
+    , authenticatedSessions = Dict.empty
+    , sites = old.sites |> Dict.toList |> List.map (Tuple.mapBoth identity migrate_Api_Site_Site) |> Dict.fromList
     , categories = old.categories
     , frontendLangs = old.frontendLangs
-    , message = (Unimplemented {- Field of type `String` was removed in V10. I need you to do something with the `old.message` value if you wish to keep the data, then remove this line. -})
     }
 
 
@@ -182,17 +181,6 @@ migrate_Gen_Model_Model old =
         Evergreen.V1.Gen.Model.NotFound p0 ->
             Evergreen.V10.Gen.Model.NotFound p0
 
-        notices ->
-            {- @NOTICE `Login Params Model` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `Register Params Model` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            (Unimplemented {- New constructors were added. I need you to resolve the above notices and then remove this case. -})
-
 
 migrate_Gen_Msg_Msg : Evergreen.V1.Gen.Msg.Msg -> Evergreen.V10.Gen.Msg.Msg
 migrate_Gen_Msg_Msg old =
@@ -205,17 +193,6 @@ migrate_Gen_Msg_Msg old =
 
         Evergreen.V1.Gen.Msg.Home_ p0 ->
             Evergreen.V10.Gen.Msg.Home_ (p0 |> migrate_Pages_Home__Msg)
-
-        notices ->
-            {- @NOTICE `Login Msg` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `Register Msg` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            (Unimplemented {- New constructors were added. I need you to resolve the above notices and then remove this case. -})
 
 
 migrate_Gen_Pages_Model : Evergreen.V1.Gen.Pages.Model -> Evergreen.V10.Gen.Pages.Model
@@ -243,7 +220,11 @@ migrate_Pages_AddSite_Field old =
 
 migrate_Pages_AddSite_Model : Evergreen.V1.Pages.AddSite.Model -> Evergreen.V10.Pages.AddSite.Model
 migrate_Pages_AddSite_Model old =
-    old
+    { site = old.site
+    , category = old.category |> Maybe.map identity
+    , frontendLang = old.frontendLang |> Maybe.map identity
+    , message = Nothing
+    }
 
 
 migrate_Pages_AddSite_Msg : Evergreen.V1.Pages.AddSite.Msg -> Evergreen.V10.Pages.AddSite.Msg
@@ -287,24 +268,15 @@ migrate_Pages_Admin_Msg old =
             Evergreen.V10.Pages.Admin.Updated (p0 |> migrate_Pages_Admin_Field) p1
 
         Evergreen.V1.Pages.Admin.CLickedSubmit p0 ->
-            (Unimplemented
-             {- `CLickedSubmit` was removed or renamed in V10 so I couldn't figure out how to migrate it.
-                I need you to decide what happens to this Evergreen.V1.Pages.Admin.CLickedSubmit value in a migration.
-                See https://lamdera.com/tips/modified-custom-type for more info.
-             -}
-            )
-
-        notices ->
-            {- @NOTICE `ClickedSubmit Field` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            (Unimplemented {- New constructors were added. I need you to resolve the above notices and then remove this case. -})
+            Evergreen.V10.Pages.Admin.ClickedSubmit (p0 |> migrate_Pages_Admin_Field)
 
 
 migrate_Pages_Home__Model : Evergreen.V1.Pages.Home_.Model -> Evergreen.V10.Pages.Home_.Model
-migrate_Pages_Home__Model old =
-    (Unimplemented {- Type changed from `()` to `{}`. I need you to write this migration. -})
+migrate_Pages_Home__Model _ =
+    { searchTerm = ""
+    , platform = Evergreen.V10.Api.Site.Mobile
+    , expandedSite = Nothing
+    }
 
 
 migrate_Pages_Home__Msg : Evergreen.V1.Pages.Home_.Msg -> Evergreen.V10.Pages.Home_.Msg
@@ -316,27 +288,16 @@ migrate_Pages_Home__Msg old =
         Evergreen.V1.Pages.Home_.NoOp ->
             Evergreen.V10.Pages.Home_.NoOp
 
-        notices ->
-            {- @NOTICE `UpdatedSearchTerm String` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `ClickedPlatform Platform` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            (Unimplemented {- New constructors were added. I need you to resolve the above notices and then remove this case. -})
-
 
 migrate_Shared_Model : Evergreen.V1.Shared.Model -> Evergreen.V10.Shared.Model
 migrate_Shared_Model old =
-    { user = (Unimplemented {- Type `Maybe (Evergreen.V10.Api.User.User)` was added in V10. I need you to set a default value. -})
+    { user = Nothing
     , sites = old.sites |> Dict.map (\k -> migrate_Api_Site_Site)
     , sort = old.sort |> Tuple.mapBoth migrate_Api_Site_Sort migrate_Api_Site_Direction
     , categories = old.categories
     , frontendLangs = old.frontendLangs
-    , viewportWidth = (Unimplemented {- Type `Float` was added in V10. I need you to set a default value. -})
-    , menuOpen = (Unimplemented {- Type `Bool` was added in V10. I need you to set a default value. -})
+    , viewportWidth = 0
+    , menuOpen = False
     }
 
 
@@ -344,12 +305,7 @@ migrate_Shared_Msg : Evergreen.V1.Shared.Msg -> Evergreen.V10.Shared.Msg
 migrate_Shared_Msg old =
     case old of
         Evergreen.V1.Shared.ChangeSort p0 ->
-            (Unimplemented
-             {- `ChangeSort` was removed or renamed in V10 so I couldn't figure out how to migrate it.
-                I need you to decide what happens to this Evergreen.V1.Shared.ChangeSort value in a migration.
-                See https://lamdera.com/tips/modified-custom-type for more info.
-             -}
-            )
+            Evergreen.V10.Shared.ChangedSort (p0 |> migrate_Api_Site_Sort)
 
         Evergreen.V1.Shared.GotSites p0 ->
             Evergreen.V10.Shared.GotSites (p0 |> Dict.map (\k -> migrate_Api_Site_Site))
@@ -359,41 +315,6 @@ migrate_Shared_Msg old =
 
         Evergreen.V1.Shared.GotFrontendLangs p0 ->
             Evergreen.V10.Shared.GotFrontendLangs p0
-
-        notices ->
-            {- @NOTICE `SignedInUser User` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `SignedOutUser` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `ChangedSort Sort` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `ClickedSignOut` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `GotViewport Viewport` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `ResizedViewport ()` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `ClickedMenu` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `CloseMenu` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            (Unimplemented {- New constructors were added. I need you to resolve the above notices and then remove this case. -})
 
 
 migrate_Types_FrontendMsg : Evergreen.V1.Types.FrontendMsg -> Evergreen.V10.Types.FrontendMsg
@@ -432,14 +353,3 @@ migrate_Types_ToFrontend old =
 
         Evergreen.V1.Types.NoOpToFrontend ->
             Evergreen.V10.Types.NoOpToFrontend
-
-        notices ->
-            {- @NOTICE `SignInUser User` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            {- @NOTICE `SignOutUser` was added in V10.
-               This is just a reminder in case migrating some subset of the old data to this new value was important.
-               See https://lamdera.com/tips/modified-custom-type for more info.
-            -}
-            (Unimplemented {- New constructors were added. I need you to resolve the above notices and then remove this case. -})

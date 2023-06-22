@@ -7,6 +7,7 @@ type alias Model =
     { site : String
     , category : Maybe Evergreen.V10.Api.Site.Category
     , frontendLang : Maybe Evergreen.V10.Api.Site.FrontendLang
+    , message : Maybe ( String, Bool )
     }
 
 

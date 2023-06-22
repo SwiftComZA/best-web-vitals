@@ -1,4 +1,4 @@
-module Pages.AddSite exposing (Model, Msg, page)
+module Pages.AddSite exposing (Field(..), Model, Msg(..), page)
 
 import Api.Site
 import Bridge exposing (..)

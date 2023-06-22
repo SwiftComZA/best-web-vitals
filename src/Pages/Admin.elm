@@ -1,4 +1,4 @@
-module Pages.Admin exposing (Model, Msg(..), page)
+module Pages.Admin exposing (Field(..), Model, Msg(..), page)
 
 import Api.Site as Site exposing (Score(..), ScoreType(..), Site, Sort(..))
 import Bridge exposing (..)
