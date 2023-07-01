@@ -20,25 +20,34 @@ See <https://dashboard.lamdera.app/docs/evergreen> for more info.
 -}
 
 import Dict
+import Evergreen.V1.Api.Data
 import Evergreen.V1.Api.Site
+import Evergreen.V1.Api.User
 import Evergreen.V1.Gen.Model
 import Evergreen.V1.Gen.Msg
 import Evergreen.V1.Gen.Pages
 import Evergreen.V1.Pages.AddSite
 import Evergreen.V1.Pages.Admin
 import Evergreen.V1.Pages.Home_
+import Evergreen.V1.Pages.Login
+import Evergreen.V1.Pages.Register
 import Evergreen.V1.Shared
 import Evergreen.V1.Types
+import Evergreen.V10.Api.Data
 import Evergreen.V10.Api.Site
+import Evergreen.V10.Api.User
 import Evergreen.V10.Gen.Model
 import Evergreen.V10.Gen.Msg
 import Evergreen.V10.Gen.Pages
 import Evergreen.V10.Pages.AddSite
 import Evergreen.V10.Pages.Admin
 import Evergreen.V10.Pages.Home_
+import Evergreen.V10.Pages.Login
+import Evergreen.V10.Pages.Register
 import Evergreen.V10.Shared
 import Evergreen.V10.Types
 import Lamdera.Migrations exposing (..)
+import Maybe
 
 
 frontendModel : Evergreen.V1.Types.FrontendModel -> ModelMigration Evergreen.V10.Types.FrontendModel Evergreen.V10.Types.FrontendMsg
@@ -73,8 +82,8 @@ toFrontend old =
 
 migrate_Types_BackendModel : Evergreen.V1.Types.BackendModel -> Evergreen.V10.Types.BackendModel
 migrate_Types_BackendModel old =
-    { users = Dict.empty
-    , authenticatedSessions = Dict.empty
+    { users = old.users |> Dict.map (\k -> migrate_Api_User_UserFull)
+    , authenticatedSessions = old.sessions
     , sites = old.sites |> Dict.toList |> List.map (Tuple.mapBoth identity migrate_Api_Site_Site) |> Dict.fromList
     , categories = old.categories
     , frontendLangs = old.frontendLangs
@@ -88,6 +97,22 @@ migrate_Types_FrontendModel old =
     , shared = old.shared |> migrate_Shared_Model
     , page = old.page |> migrate_Gen_Pages_Model
     }
+
+
+migrate_Api_Data_Data : (value_old -> value_new) -> Evergreen.V1.Api.Data.Data value_old -> Evergreen.V10.Api.Data.Data value_new
+migrate_Api_Data_Data migrate_value old =
+    case old of
+        Evergreen.V1.Api.Data.NotAsked ->
+            Evergreen.V10.Api.Data.NotAsked
+
+        Evergreen.V1.Api.Data.Loading ->
+            Evergreen.V10.Api.Data.Loading
+
+        Evergreen.V1.Api.Data.Failure p0 ->
+            Evergreen.V10.Api.Data.Failure p0
+
+        Evergreen.V1.Api.Data.Success p0 ->
+            Evergreen.V10.Api.Data.Success (p0 |> migrate_value)
 
 
 migrate_Api_Site_Direction : Evergreen.V1.Api.Site.Direction -> Evergreen.V10.Api.Site.Direction
@@ -163,6 +188,24 @@ migrate_Api_Site_Sort old =
             Evergreen.V10.Api.Site.DesktopScore (p0 |> migrate_Api_Site_ScoreType)
 
 
+migrate_Api_User_User : Evergreen.V1.Api.User.User -> Evergreen.V10.Api.User.User
+migrate_Api_User_User old =
+    { username = old.username
+    , email = old.email
+    , isAdmin = old.isAdmin
+    }
+
+
+migrate_Api_User_UserFull : Evergreen.V1.Api.User.UserFull -> Evergreen.V10.Api.User.UserFull
+migrate_Api_User_UserFull old =
+    { username = old.username
+    , email = old.email
+    , isAdmin = old.isAdmin
+    , passwordHash = old.passwordHash
+    , salt = old.salt
+    }
+
+
 migrate_Gen_Model_Model : Evergreen.V1.Gen.Model.Model -> Evergreen.V10.Gen.Model.Model
 migrate_Gen_Model_Model old =
     case old of
@@ -178,8 +221,14 @@ migrate_Gen_Model_Model old =
         Evergreen.V1.Gen.Model.Home_ p0 p1 ->
             Evergreen.V10.Gen.Model.Home_ p0 (p1 |> migrate_Pages_Home__Model)
 
+        Evergreen.V1.Gen.Model.Login p0 p1 ->
+            Evergreen.V10.Gen.Model.Login p0 (p1 |> migrate_Pages_Login_Model)
+
         Evergreen.V1.Gen.Model.NotFound p0 ->
             Evergreen.V10.Gen.Model.NotFound p0
+
+        Evergreen.V1.Gen.Model.Register p0 p1 ->
+            Evergreen.V10.Gen.Model.Register p0 (p1 |> migrate_Pages_Register_Model)
 
 
 migrate_Gen_Msg_Msg : Evergreen.V1.Gen.Msg.Msg -> Evergreen.V10.Gen.Msg.Msg
@@ -193,6 +242,12 @@ migrate_Gen_Msg_Msg old =
 
         Evergreen.V1.Gen.Msg.Home_ p0 ->
             Evergreen.V10.Gen.Msg.Home_ (p0 |> migrate_Pages_Home__Msg)
+
+        Evergreen.V1.Gen.Msg.Login p0 ->
+            Evergreen.V10.Gen.Msg.Login (p0 |> migrate_Pages_Login_Msg)
+
+        Evergreen.V1.Gen.Msg.Register p0 ->
+            Evergreen.V10.Gen.Msg.Register (p0 |> migrate_Pages_Register_Msg)
 
 
 migrate_Gen_Pages_Model : Evergreen.V1.Gen.Pages.Model -> Evergreen.V10.Gen.Pages.Model
@@ -221,8 +276,8 @@ migrate_Pages_AddSite_Field old =
 migrate_Pages_AddSite_Model : Evergreen.V1.Pages.AddSite.Model -> Evergreen.V10.Pages.AddSite.Model
 migrate_Pages_AddSite_Model old =
     { site = old.site
-    , category = old.category |> Maybe.map identity
-    , frontendLang = old.frontendLang |> Maybe.map identity
+    , category = old.category
+    , frontendLang = old.frontendLang
     , message = Nothing
     }
 
@@ -267,13 +322,13 @@ migrate_Pages_Admin_Msg old =
         Evergreen.V1.Pages.Admin.Updated p0 p1 ->
             Evergreen.V10.Pages.Admin.Updated (p0 |> migrate_Pages_Admin_Field) p1
 
-        Evergreen.V1.Pages.Admin.CLickedSubmit p0 ->
+        Evergreen.V1.Pages.Admin.ClickedSubmit p0 ->
             Evergreen.V10.Pages.Admin.ClickedSubmit (p0 |> migrate_Pages_Admin_Field)
 
 
 migrate_Pages_Home__Model : Evergreen.V1.Pages.Home_.Model -> Evergreen.V10.Pages.Home_.Model
-migrate_Pages_Home__Model _ =
-    { searchTerm = ""
+migrate_Pages_Home__Model old =
+    { searchTerm = old.searchTerm
     , platform = Evergreen.V10.Api.Site.Mobile
     , expandedSite = Nothing
     }
@@ -285,13 +340,75 @@ migrate_Pages_Home__Msg old =
         Evergreen.V1.Pages.Home_.ClickedChangeSort p0 ->
             Evergreen.V10.Pages.Home_.ClickedChangeSort (p0 |> migrate_Api_Site_Sort)
 
+        Evergreen.V1.Pages.Home_.UpdatedSearchTerm p0 ->
+            Evergreen.V10.Pages.Home_.UpdatedSearchTerm p0
+
         Evergreen.V1.Pages.Home_.NoOp ->
             Evergreen.V10.Pages.Home_.NoOp
 
 
+migrate_Pages_Login_Field : Evergreen.V1.Pages.Login.Field -> Evergreen.V10.Pages.Login.Field
+migrate_Pages_Login_Field old =
+    case old of
+        Evergreen.V1.Pages.Login.Email ->
+            Evergreen.V10.Pages.Login.Email
+
+        Evergreen.V1.Pages.Login.Password ->
+            Evergreen.V10.Pages.Login.Password
+
+
+migrate_Pages_Login_Model : Evergreen.V1.Pages.Login.Model -> Evergreen.V10.Pages.Login.Model
+migrate_Pages_Login_Model old =
+    old
+
+
+migrate_Pages_Login_Msg : Evergreen.V1.Pages.Login.Msg -> Evergreen.V10.Pages.Login.Msg
+migrate_Pages_Login_Msg old =
+    case old of
+        Evergreen.V1.Pages.Login.Updated p0 p1 ->
+            Evergreen.V10.Pages.Login.Updated (p0 |> migrate_Pages_Login_Field) p1
+
+        Evergreen.V1.Pages.Login.ClickedSubmit ->
+            Evergreen.V10.Pages.Login.ClickedSubmit
+
+        Evergreen.V1.Pages.Login.GotUser p0 ->
+            Evergreen.V10.Pages.Login.GotUser (p0 |> migrate_Api_Data_Data migrate_Api_User_User)
+
+
+migrate_Pages_Register_Field : Evergreen.V1.Pages.Register.Field -> Evergreen.V10.Pages.Register.Field
+migrate_Pages_Register_Field old =
+    case old of
+        Evergreen.V1.Pages.Register.Username ->
+            Evergreen.V10.Pages.Register.Username
+
+        Evergreen.V1.Pages.Register.Email ->
+            Evergreen.V10.Pages.Register.Email
+
+        Evergreen.V1.Pages.Register.Password ->
+            Evergreen.V10.Pages.Register.Password
+
+
+migrate_Pages_Register_Model : Evergreen.V1.Pages.Register.Model -> Evergreen.V10.Pages.Register.Model
+migrate_Pages_Register_Model old =
+    old
+
+
+migrate_Pages_Register_Msg : Evergreen.V1.Pages.Register.Msg -> Evergreen.V10.Pages.Register.Msg
+migrate_Pages_Register_Msg old =
+    case old of
+        Evergreen.V1.Pages.Register.Updated p0 p1 ->
+            Evergreen.V10.Pages.Register.Updated (p0 |> migrate_Pages_Register_Field) p1
+
+        Evergreen.V1.Pages.Register.ClickedSubmit ->
+            Evergreen.V10.Pages.Register.ClickedSubmit
+
+        Evergreen.V1.Pages.Register.GotUser p0 ->
+            Evergreen.V10.Pages.Register.GotUser (p0 |> migrate_Api_Data_Data migrate_Api_User_User)
+
+
 migrate_Shared_Model : Evergreen.V1.Shared.Model -> Evergreen.V10.Shared.Model
 migrate_Shared_Model old =
-    { user = Nothing
+    { user = old.user |> Maybe.map migrate_Api_User_User
     , sites = old.sites |> Dict.map (\k -> migrate_Api_Site_Site)
     , sort = old.sort |> Tuple.mapBoth migrate_Api_Site_Sort migrate_Api_Site_Direction
     , categories = old.categories
@@ -304,7 +421,13 @@ migrate_Shared_Model old =
 migrate_Shared_Msg : Evergreen.V1.Shared.Msg -> Evergreen.V10.Shared.Msg
 migrate_Shared_Msg old =
     case old of
-        Evergreen.V1.Shared.ChangeSort p0 ->
+        Evergreen.V1.Shared.SignedInUser p0 ->
+            Evergreen.V10.Shared.SignedInUser (p0 |> migrate_Api_User_User)
+
+        Evergreen.V1.Shared.SignedOutUser ->
+            Evergreen.V10.Shared.SignedOutUser
+
+        Evergreen.V1.Shared.ChangedSort p0 ->
             Evergreen.V10.Shared.ChangedSort (p0 |> migrate_Api_Site_Sort)
 
         Evergreen.V1.Shared.GotSites p0 ->
@@ -315,6 +438,9 @@ migrate_Shared_Msg old =
 
         Evergreen.V1.Shared.GotFrontendLangs p0 ->
             Evergreen.V10.Shared.GotFrontendLangs p0
+
+        Evergreen.V1.Shared.ClickedSignOut ->
+            Evergreen.V10.Shared.ClickedSignOut
 
 
 migrate_Types_FrontendMsg : Evergreen.V1.Types.FrontendMsg -> Evergreen.V10.Types.FrontendMsg
@@ -341,6 +467,12 @@ migrate_Types_ToFrontend old =
     case old of
         Evergreen.V1.Types.PageMsg p0 ->
             Evergreen.V10.Types.PageMsg (p0 |> migrate_Gen_Pages_Msg)
+
+        Evergreen.V1.Types.SignInUser p0 ->
+            Evergreen.V10.Types.SignInUser (p0 |> migrate_Api_User_User)
+
+        Evergreen.V1.Types.SignOutUser ->
+            Evergreen.V10.Types.SignOutUser
 
         Evergreen.V1.Types.SendSites p0 ->
             Evergreen.V10.Types.SendSites (p0 |> Dict.map (\k -> migrate_Api_Site_Site))
