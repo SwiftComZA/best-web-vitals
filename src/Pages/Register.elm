@@ -1,4 +1,4 @@
-module Pages.Register exposing (Model, Msg(..), page)
+module Pages.Register exposing (Field(..), Model, Msg(..), page)
 
 import Api.Data exposing (Data(..))
 import Api.User exposing (User, validateUser)
